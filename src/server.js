@@ -4,42 +4,6 @@ const cors = require("cors");
 const compression = require("compression");
 const app = express();
 const db = require("./database");
-const { NFC } = require("nfc-pcsc");
-
-const nfc = new NFC();
-
-nfc.on('reader', reader => {
-	
- 
-    reader.on('card', card => {
- 
-        // card is object containing following data
-        // [always] String type: TAG_ISO_14443_3 (standard nfc tags like MIFARE) or TAG_ISO_14443_4 (Android HCE and others)
-        // [always] String standard: same as type
-        // [only TAG_ISO_14443_3] String uid: tag uid
-        // [only TAG_ISO_14443_4] Buffer data: raw data from select APDU response
- 
-        console.log(`${reader.reader.name}  card detected`, card);
- 
-    });
- 
-    reader.on('card.off', card => {
-        console.log(`${reader.reader.name}  card removed`, card);
-    });
- 
-    reader.on('error', err => {
-        console.log(`${reader.reader.name}  an error occurred`, err);
-    });
- 
-    reader.on('end', () => {
-        console.log(`${reader.reader.name}  device removed`);
-    });
- 
-});
- 
-nfc.on('error', err => {
-    console.log('an error occurred', err);
-});
 
 const corsOptions = {
 	origin: "*",
@@ -67,9 +31,10 @@ server.on("listening", () => {
 	});
 });
 
-// Create employee file in relative folder and add the employee to they employee array.
-app.post("/createEmployee", (req, res) => {
-	db.addEmployee(req.body, () => {
+// Add a new employee to the database
+app.post("/addEmployee", (req, res) => {
+	db.addEmployee(req.body, (employee) => {
+		res.send(employee);
 		res.end();
 	});
 });
@@ -100,6 +65,7 @@ app.post("/getEmployeeWorkLog", (req, res) => {
 
 // Toggle the employee"s working state
 app.post("/setEmployeeWorking", (req, res) => {
+	console.log(req.body);
 	db.setEmployeeWorking(req.body.id, req.body.working, () => {
 		res.end();
 	});
@@ -115,6 +81,13 @@ app.post("/deleteEmployee", (req, res) => {
 // Edit the employee's data
 app.post("/editEmployee", (req, res) => {
 	db.editEmployee(req.body.employee, () => {
+		res.end();
+	});
+});
+
+// Received scanner information!
+app.post("/cardScanned", (req, res) => {
+	db.toggleEmployeeWorkingUID(req.body.uid, () => {
 		res.end();
 	});
 });

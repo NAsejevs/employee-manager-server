@@ -1,5 +1,14 @@
 {
-  "dependencies": {
-    "express": "^4.16.4"
-  }
+	"name": "employee-manager",
+	"version": "0.1.0",
+	"dependencies": {
+		"compression": "^1.7.3",
+		"cors": "^2.8.5",
+		"express": "^4.16.4",
+		"nodemon": "^1.18.10",
+		"sqlite3": "^4.0.6"
+	},
+	"scripts": {
+		"server": "nodemon src/server.js"
+	}
 }

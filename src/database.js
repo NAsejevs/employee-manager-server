@@ -38,6 +38,28 @@ module.exports.getEmployee = (id, callback) => {
 	});
 }
 
+module.exports.getEmployeeUID = (uid, callback) => {
+	db.get(`SELECT * FROM employees WHERE uid="${uid}"`, (err, row) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(row);
+		}
+	});
+}
+
+// Registration process:
+// Go through all employees and assign a UID to whoever doesn't have one
+module.exports.setEmptyUID = (uid, callback) => {
+	db.run(`UPDATE employees SET uid="${uid}" WHERE uid IS NULL or uid=""`, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
 module.exports.getEmployeeWorkLog = (id, callback) => {
 	db.all(`SELECT * FROM work_log WHERE employee_id=${id}`, (err, rows) => {
 		if (err) {
@@ -59,11 +81,14 @@ module.exports.addEmployee = (employee, callback) => {
 		"${employee.personalCode}"
 	)`;
 
-	db.run(query, (err) => {
+	db.run(query, function(err) {
 		if (err) {
 			console.log(err);
 		} else {
-			callback();
+			// Get the last inserted row ID in employees table and launch callback with the new employee
+			exports.getEmployee(this.lastID, (row) => {
+				callback(row);
+			});
 		}
 	});
 }
@@ -153,6 +178,22 @@ module.exports.editEmployee = (employee, callback) => {
 			console.log(err);
 		} else {
 			callback();
+		}
+	});
+}
+
+module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
+	exports.getEmployeeUID(uid, (row) => {
+		if(row) {
+			// Employee was found by UID and the work state has been toggled
+			exports.setEmployeeWorking(row.id, !row.working, () => {
+				callback();
+			});
+		} else {
+			// No employee with this UID was found, therefore, this is a registration process
+			exports.setEmptyUID(uid, () => {
+				callback();
+			});
 		}
 	});
 }
