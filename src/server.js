@@ -3,10 +3,12 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const compression = require("compression");
 const app = express();
+const Cookies = require("universal-cookie");
 const db = require("./database");
 
 const corsOptions = {
-	origin: "*",
+	credentials: true,
+	origin: "http://localhost:3000",
 	optionsSuccessStatus: 200
 };
 
@@ -90,4 +92,10 @@ app.post("/cardScanned", (req, res) => {
 	db.toggleEmployeeWorkingUID(req.body.uid, () => {
 		res.end();
 	});
+});
+
+// User authentication
+app.post("/authenticate", (req, res) => {
+	const cookies = new Cookies(req.headers.cookie);
+	console.log(cookies.get('myCat'));
 });

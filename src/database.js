@@ -146,7 +146,7 @@ module.exports.setEmployeeWorking = (id, working, callback) => {
 }
 
 module.exports.deleteEmployee = (id, callback) => {
-	const query = `DELETE FROM employees 
+	let query = `DELETE FROM employees 
 		WHERE
 		id = ${id}
 	`;
@@ -155,7 +155,18 @@ module.exports.deleteEmployee = (id, callback) => {
 		if (err) {
 			console.log(err);
 		} else {
-			callback();
+			query = `DELETE FROM work_log 
+				WHERE
+				employee_id = ${id}
+			`;
+
+			db.run(query, (err) => {
+				if (err) {
+					console.log(err);
+				} else {
+					callback();
+				}
+			});
 		}
 	});
 }
