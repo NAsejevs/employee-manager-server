@@ -5,6 +5,7 @@ const compression = require("compression");
 const app = express();
 const Cookies = require("universal-cookie");
 const db = require("./database");
+const bcypt = require("bcrypt");
 
 const corsOptions = {
 	credentials: true,
@@ -19,6 +20,20 @@ app.use(
 	bodyParser.json() // Parse JSON requests
 );
 
+app.use((req, res, next) => {
+	if(req.url !== "/checkSession" &&
+	req.url !== "/authenticate") {
+		const cookies = new Cookies(req.headers.cookie);
+		sessions.forEach((session) => {
+			if(session.key === cookies.get("key")) {
+				next();
+			}
+		});
+	} else {
+		next();
+	}
+});
+
 // Start the server!
 const server = app.listen(8080, () => {
 	console.log("Server started...\nPORT: 8080");
@@ -32,6 +47,8 @@ server.on("listening", () => {
 		//console.log("Connected to the DB and got employees (", employees.length, "): \n", employees);
 	});
 });
+
+// ----------------------- Employees -----------------------
 
 // Add a new employee to the database
 app.post("/addEmployee", (req, res) => {
@@ -94,8 +111,59 @@ app.post("/cardScanned", (req, res) => {
 	});
 });
 
-// User authentication
-app.post("/authenticate", (req, res) => {
+// ----------------------- Users -----------------------
+
+const sessions = [];
+
+const keyGen = (length) => {
+	let text = "";
+	const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  
+	for (var i = 0; i < length; i++) {
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	}
+  
+	return text;
+}
+
+// Check existing key if user has one
+app.post("/checkSession", (req, res) => {
+	let authenticated = false;
 	const cookies = new Cookies(req.headers.cookie);
-	console.log(cookies.get('myCat'));
+
+	sessions.forEach((session) => {
+		if(session.key === cookies.get("key")) {
+			authenticated = true;
+		}
+	});
+
+	console.log("user key valid: ", authenticated);
+	console.log(sessions);
+
+	res.send(authenticated);
+	res.end();
+});
+
+// Authenticate using username and password
+app.post("/authenticate", (req, res) => {
+	const username = req.body.username;
+	const password = req.body.password;
+
+	db.getUserByUsername(username, (row) => {
+		if(row) {
+			if(row.password == password) {
+				const key = keyGen(16);
+
+				// Generate new session key for the user
+				res.cookie("key", key, { expires: new Date(Date.now() + 604800000), httpOnly: true });
+				sessions.push({ key: key });
+
+				res.send(true);
+			}
+		} else {
+			res.send(false);
+			console.log("user not found");
+		}
+		res.end();
+	});
 });

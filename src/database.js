@@ -18,6 +18,8 @@ module.exports.connect = () => {
 	});
 }
 
+// ----------------------- Employees -----------------------
+
 module.exports.getEmployees = (callback) => {
 	db.all(`SELECT * FROM employees`, (err, rows) => {
 		if (err) {
@@ -205,6 +207,18 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 			exports.setEmptyUID(uid, () => {
 				callback();
 			});
+		}
+	});
+}
+
+// ----------------------- Users -----------------------
+
+module.exports.getUserByUsername = (username, callback) => {
+	db.get(`SELECT * FROM users WHERE username="${username}"`, (err, row) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(row);
 		}
 	});
 }
