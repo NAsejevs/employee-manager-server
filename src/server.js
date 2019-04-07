@@ -113,7 +113,7 @@ app.post("/cardScanned", (req, res) => {
 
 // ----------------------- Users -----------------------
 
-const sessions = [];
+let sessions = [];
 
 const keyGen = (length) => {
 	let text = "";
@@ -149,14 +149,14 @@ app.post("/authenticate", (req, res) => {
 	const username = req.body.username;
 	const password = req.body.password;
 
-	db.getUserByUsername(username, (row) => {
-		if(row) {
-			if(row.password == password) {
+	db.getUserByUsername(username, (user) => {
+		if(user) {
+			if(user.password == password) {
 				const key = keyGen(16);
 
 				// Generate new session key for the user
 				res.cookie("key", key, { expires: new Date(Date.now() + 604800000), httpOnly: true });
-				sessions.push({ key: key });
+				sessions.push({ id: user.id, username: username, key: key });
 
 				res.send(true);
 			}
@@ -166,4 +166,53 @@ app.post("/authenticate", (req, res) => {
 		}
 		res.end();
 	});
+});
+
+// Log user out and close open session
+app.post("/logOut", (req, res) => {
+	const cookies = new Cookies(req.headers.cookie);
+
+	res.cookie("key", "", { expires: new Date(Date.now()), httpOnly: true });
+	res.end();
+
+	sessions = sessions.filter(session => {
+		if(session.key === cookies.get("key")) {
+			return false;
+		} else {
+			return true;
+		}
+	});
+});
+
+app.post("/getUserByUsername", (req, res) => {
+	const username = req.body.username;
+
+	db.getUserByUsername(username, (user) => {
+		if(user) {
+			res.send(user);
+		}
+		res.end();
+	});
+});
+
+app.post("/getUserByKey", (req, res) => {
+	const cookies = new Cookies(req.headers.cookie);
+
+	let result = false;
+	sessions.forEach(session => {
+		if(session.key === cookies.get("key")) {
+			db.getUserByUsername(session.username, (user) => {
+				if(user) {
+					console.log("user sent...");
+					result = true;
+					res.send(user);
+					res.end();
+				}
+			});
+		}
+	});
+
+	if(!result) {
+		//res.end();
+	}
 });
