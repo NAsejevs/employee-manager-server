@@ -147,6 +147,34 @@ module.exports.setEmployeeWorking = (id, working, callback) => {
 	});
 }
 
+module.exports.setEmployeeArchived = (id, archive, callback) => {
+	const query = `UPDATE employees SET 
+		archived = ${archive ? 1 : 0}
+		WHERE id = ${id}`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
+module.exports.setEmployeeActive = (id, active, callback) => {
+	const query = `UPDATE employees SET 
+		active = ${active ? 1 : 0}
+		WHERE id = ${id}`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
 module.exports.deleteEmployee = (id, callback) => {
 	let query = `DELETE FROM employees 
 		WHERE

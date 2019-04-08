@@ -44,7 +44,7 @@ server.on("listening", () => {
 	// Initialize database.
 	db.connect();
 	employees = db.getEmployees((employees) => {
-		//console.log("Connected to the DB and got employees (", employees.length, "): \n", employees);
+		console.log("Connected to the DB and got employees (", employees.length, "): \n", employees);
 	});
 });
 
@@ -82,10 +82,23 @@ app.post("/getEmployeeWorkLog", (req, res) => {
 	});
 });
 
-// Toggle the employee"s working state
+// Toggle the employee's working state
 app.post("/setEmployeeWorking", (req, res) => {
-	console.log(req.body);
 	db.setEmployeeWorking(req.body.id, req.body.working, () => {
+		res.end();
+	});
+});
+
+// Set the employee's archive state
+app.post("/setArchivedEmployee", (req, res) => {
+	db.setEmployeeArchived(req.body.id, req.body.archived, () => {
+		res.end();
+	});
+});
+
+// Set the employee's active state
+app.post("/setActiveEmployee", (req, res) => {
+	db.setEmployeeActive(req.body.id, req.body.active, () => {
 		res.end();
 	});
 });
@@ -137,9 +150,6 @@ app.post("/checkSession", (req, res) => {
 		}
 	});
 
-	console.log("user key valid: ", authenticated);
-	console.log(sessions);
-
 	res.send(authenticated);
 	res.end();
 });
@@ -162,7 +172,6 @@ app.post("/authenticate", (req, res) => {
 			}
 		} else {
 			res.send(false);
-			console.log("user not found");
 		}
 		res.end();
 	});
@@ -203,7 +212,6 @@ app.post("/getUserByKey", (req, res) => {
 		if(session.key === cookies.get("key")) {
 			db.getUserByUsername(session.username, (user) => {
 				if(user) {
-					console.log("user sent...");
 					result = true;
 					res.send(user);
 					res.end();
