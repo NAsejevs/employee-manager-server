@@ -19,7 +19,7 @@ const {
 
 const corsOptions = {
 	credentials: true,
-	origin: "http://192.168.1.150:3000",
+	origin: "http://localhost:80",
 	optionsSuccessStatus: 200
 };
 
