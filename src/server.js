@@ -19,7 +19,7 @@ const {
 
 const corsOptions = {
 	credentials: true,
-	origin: "http://localhost:3000",
+	origin: "http://192.168.1.150:3000",
 	optionsSuccessStatus: 200
 };
 
@@ -81,9 +81,17 @@ app.post("/getEmployee", (req, res) => {
 	});
 });
 
-// Send the client a signle employee by ID.
+// Send the work log of an employee by id
 app.post("/getEmployeeWorkLog", (req, res) => {
 	db.getEmployeeWorkLog(req.body.id, (workLog) => {
+		res.send(workLog);
+		res.end();
+	});
+});
+
+// Send the work log of an employee by id from date to date
+app.post("/getEmployeeWorkLogFromTo", (req, res) => {
+	db.getEmployeeWorkLogFromTo(req.body.id, req.body.from, req.body.to, (workLog) => {
 		res.send(workLog);
 		res.end();
 	});

@@ -73,8 +73,8 @@ module.exports.getEmployeeWorkLog = (id, callback) => {
 }
 
 module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
-	const fromJSON = from.toJSON();
-	const toJSON = to.toJSON();
+	const fromJSON = new Date(from).toJSON();
+	const toJSON = new Date(to).toJSON();
 
 	db.all(`SELECT * FROM work_log WHERE employee_id=${id} AND start_time >= "${fromJSON}" AND start_time <= "${toJSON}"`, (err, rows) => {
 		if (err) {
@@ -215,8 +215,6 @@ module.exports.deleteEmployee = (id, callback) => {
 }
 
 module.exports.editEmployee = (employee, callback) => {
-	console.log(employee);
-
 	const query = `UPDATE employees 
 	SET 
 		name = "${employee.name}",
@@ -224,8 +222,6 @@ module.exports.editEmployee = (employee, callback) => {
 		personalCode = "${employee.personalCode}"
 	WHERE 
 		id = ${employee.id}`;
-
-		console.log(query);
 
 	db.run(query, (err) => {
 		if (err) {
