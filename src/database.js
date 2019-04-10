@@ -18,6 +18,8 @@ module.exports.connect = () => {
 	});
 }
 
+// ----------------------- Employees -----------------------
+
 module.exports.getEmployees = (callback) => {
 	db.all(`SELECT * FROM employees`, (err, rows) => {
 		if (err) {
@@ -62,6 +64,19 @@ module.exports.setEmptyUID = (uid, callback) => {
 
 module.exports.getEmployeeWorkLog = (id, callback) => {
 	db.all(`SELECT * FROM work_log WHERE employee_id=${id}`, (err, rows) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(rows);
+		}
+	});
+}
+
+module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
+	const fromJSON = from.toJSON();
+	const toJSON = to.toJSON();
+
+	db.all(`SELECT * FROM work_log WHERE employee_id=${id} AND start_time >= "${fromJSON}" AND start_time <= "${toJSON}"`, (err, rows) => {
 		if (err) {
 			console.log(err);
 		} else {
@@ -145,8 +160,36 @@ module.exports.setEmployeeWorking = (id, working, callback) => {
 	});
 }
 
+module.exports.setEmployeeArchived = (id, archive, callback) => {
+	const query = `UPDATE employees SET 
+		archived = ${archive ? 1 : 0}
+		WHERE id = ${id}`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
+module.exports.setEmployeeActive = (id, active, callback) => {
+	const query = `UPDATE employees SET 
+		active = ${active ? 1 : 0}
+		WHERE id = ${id}`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
 module.exports.deleteEmployee = (id, callback) => {
-	const query = `DELETE FROM employees 
+	let query = `DELETE FROM employees 
 		WHERE
 		id = ${id}
 	`;
@@ -155,7 +198,18 @@ module.exports.deleteEmployee = (id, callback) => {
 		if (err) {
 			console.log(err);
 		} else {
-			callback();
+			query = `DELETE FROM work_log 
+				WHERE
+				employee_id = ${id}
+			`;
+
+			db.run(query, (err) => {
+				if (err) {
+					console.log(err);
+				} else {
+					callback();
+				}
+			});
 		}
 	});
 }
@@ -194,6 +248,18 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 			exports.setEmptyUID(uid, () => {
 				callback();
 			});
+		}
+	});
+}
+
+// ----------------------- Users -----------------------
+
+module.exports.getUserByUsername = (username, callback) => {
+	db.get(`SELECT * FROM users WHERE username="${username}"`, (err, row) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(row);
 		}
 	});
 }
