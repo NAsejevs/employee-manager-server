@@ -72,6 +72,19 @@ module.exports.getEmployeeWorkLog = (id, callback) => {
 	});
 }
 
+module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
+	const fromJSON = from.toJSON();
+	const toJSON = to.toJSON();
+
+	db.all(`SELECT * FROM work_log WHERE employee_id=${id} AND start_time >= "${fromJSON}" AND start_time <= "${toJSON}"`, (err, rows) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(rows);
+		}
+	});
+}
+
 module.exports.addEmployee = (employee, callback) => {
 	const query = `INSERT INTO employees (
 		name, 

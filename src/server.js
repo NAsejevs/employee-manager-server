@@ -5,7 +5,17 @@ const compression = require("compression");
 const app = express();
 const Cookies = require("universal-cookie");
 const db = require("./database");
-const bcypt = require("bcrypt");
+const fs = require("fs");
+const Excel = require("exceljs");
+var path = require('path');
+var mime = require('mime');
+
+const { 
+	daysInMonth, 
+	millisecondConverter, 
+	isWeekend,
+	isNumeric
+} = require("./utils");
 
 const corsOptions = {
 	credentials: true,
@@ -43,9 +53,6 @@ const server = app.listen(8080, () => {
 server.on("listening", () => {
 	// Initialize database.
 	db.connect();
-	employees = db.getEmployees((employees) => {
-		console.log("Connected to the DB and got employees (", employees.length, "): \n", employees);
-	});
 });
 
 // ----------------------- Employees -----------------------
@@ -124,6 +131,132 @@ app.post("/cardScanned", (req, res) => {
 	});
 });
 
+// Export employees to an Excel sheet
+app.get("/export", (req, res) => {
+	const startDate = new Date();
+	startDate.setUTCDate(1);
+	const endDate = new Date();
+	endDate.setUTCDate(30);
+
+	let workbook = new Excel.Workbook();
+	workbook.creator = 'Vārpas 1';
+	workbook.created = new Date();
+	workbook.modified = new Date();
+
+	workbook.views = [
+		{
+			x: 0, 
+			y: 0, 
+			width: 1000, 
+			height: 2000,
+			visibility: 'visible'
+		}
+	]
+
+	let worksheet = workbook.addWorksheet("Vārpas 1");
+
+	// Set initial columns
+	const columns = [
+		{ header: '', key: 'employee', width: 15 }
+	];
+
+	// Add all days of the mont as columns
+	for(let i = 1; i <= daysInMonth(startDate.getMonth(), startDate.getFullYear()); i++) {
+		columns.push(
+			{ header: i.toString(), key: i.toString(), width: 5 }
+		);
+	}
+
+	worksheet.columns = [
+		...columns,
+		{ header: 'Kopā', key: 'total', width: 10 },
+		{ header: 'Dienas', key: 'days', width: 10 }
+	];
+
+	// Set column auto filters
+	worksheet.autoFilter = {
+		from: {
+			row: 1,
+			column: 1
+		},
+		to: {
+			row: 1,
+			column: daysInMonth(startDate.getMonth(), startDate.getFullYear()) + 3
+		}
+	}
+
+	let weekendDays = [];
+
+	db.getEmployees((employees) => {
+		employees.forEach((employee, index) => {
+			db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate, (workLog) => {
+
+				let row = {
+					employee: employee.name + " " + employee.surname
+				}
+
+				// Input all needed data
+				let totalWorkTime = 0;
+				for(let i = 1; i <= daysInMonth(startDate.getMonth(), startDate.getFullYear()); i++) {
+					let totalDayWorkTime = 0;
+
+					row[i.toString()] = "0";
+
+					workLog.forEach((log) => {
+						if(!log.end_time) {
+							console.log("error caught");
+						}
+						if(new Date(log.start_time).getDate() === i) {
+							totalDayWorkTime += new Date(log.end_time) - new Date(log.start_time);
+							const workTime = millisecondConverter(totalDayWorkTime);
+							const workTimeFormatted = workTime.hours;
+
+							row[i.toString()] = workTimeFormatted;
+						}
+					});
+					totalWorkTime += totalDayWorkTime;
+
+					const date = new Date(startDate);
+					date.setUTCDate(i - 1);
+					if(isWeekend(date)) {
+						weekendDays.push([i]);
+					}
+				}
+
+				const totalWorkTimeFormatted = millisecondConverter(totalWorkTime);
+				row["total"] = totalWorkTimeFormatted.hours;
+				row["days"] = totalWorkTimeFormatted.hours / 24;
+
+				worksheet.addRow(row);
+
+				// Color in all weekend columns
+				weekendDays.forEach((weekendDay) => {
+					worksheet.getColumnKey(weekendDay.toString()).eachCell({ includeEmpty: true }, (cell, colNumber) => {
+						cell.fill = {
+							type: "pattern",
+							pattern: "solid",
+							fgColor:{ argb: "ffcc99" },
+							bgColor:{ argb: "ffcc99" }
+						}
+					});
+				});
+				
+				if(employees.length - 1 === index) {
+					fs.unlink("Varpas 1.xlsx", () => {
+						workbook.xlsx.writeFile("Varpas 1.xlsx")
+						.then(function() {
+							res.download("Varpas 1.xlsx", (e) => {
+								console.log(e);
+								res.end();
+							});
+						});
+					});
+				}
+			});
+		});
+	});
+});
+
 // ----------------------- Users -----------------------
 
 let sessions = [];
@@ -158,6 +291,10 @@ app.post("/checkSession", (req, res) => {
 app.post("/authenticate", (req, res) => {
 	const username = req.body.username;
 	const password = req.body.password;
+	const rememberMe = req.body.rememberMe;
+
+	const day = 86400000; // in ms
+	const week = 604800000; // in ms
 
 	db.getUserByUsername(username, (user) => {
 		if(user) {
@@ -165,7 +302,8 @@ app.post("/authenticate", (req, res) => {
 				const key = keyGen(16);
 
 				// Generate new session key for the user
-				res.cookie("key", key, { expires: new Date(Date.now() + 604800000), httpOnly: true });
+				res.cookie("key", key, { expires: new Date(Date.now() + (rememberMe ? week : day)), httpOnly: true });
+				res.cookie("settings", { username: username }, { expires: new Date(Date.now() + (rememberMe ? week : day)) });
 				sessions.push({ id: user.id, username: username, key: key });
 
 				res.send(true);
