@@ -72,6 +72,16 @@ module.exports.getEmployeeWorkLog = (id, callback) => {
 	});
 }
 
+module.exports.getEmployeeLastWorkLog = (id, callback) => {
+	db.get(`SELECT * FROM work_log WHERE employee_id=${id} ORDER BY start_time DESC`, (err, row) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(row);
+		}
+	});
+}
+
 module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
 	const fromJSON = new Date(from).toJSON();
 	const toJSON = new Date(to).toJSON();
@@ -233,11 +243,35 @@ module.exports.editEmployee = (employee, callback) => {
 }
 
 module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
-	exports.getEmployeeUID(uid, (row) => {
-		if(row) {
-			// Employee was found by UID and the work state has been toggled
-			exports.setEmployeeWorking(row.id, !row.working, () => {
-				callback();
+	exports.getEmployeeUID(uid, (employee) => {
+		if(employee) {
+			// Prevent double-scan/misscan
+			exports.getEmployeeLastWorkLog(employee.id, (workLog) => {
+				console.log(workLog);
+				const currentTime = new Date();
+				if(workLog.end_time === null) {
+					// Employee clocking out, so check start_time
+					const startTime = new Date(workLog.start_time);
+					if(currentTime - startTime < 5000) {
+						callback();
+						console.log("clocked out too quick");
+						return;
+					}
+				} else {
+					// Employee clocking in, so check end_time
+					const endTime = new Date(workLog.end_time);
+					if(currentTime - endTime < 5000) {
+						callback();
+						console.log("clocked in too quick");
+						return;
+					}
+				}
+
+				// Employee was found by UID and the work state has been toggled
+				exports.setEmployeeWorking(employee.id, !employee.working, () => {
+					console.log("no issue, toggled work");
+					callback();
+				});
 			});
 		} else {
 			// No employee with this UID was found, therefore, this is a registration process

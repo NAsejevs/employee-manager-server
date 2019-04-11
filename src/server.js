@@ -17,16 +17,9 @@ const {
 	isNumeric
 } = require("./utils");
 
-var whitelist = ['localhost', 'http://192.168.1.150'];
 const corsOptions = {
 	credentials: true,
-	origin: function (origin, callback) {
-		if (whitelist.indexOf(origin) !== -1) {
-			callback(null, true)
-		} else {
-			 callback(new Error('Not allowed by CORS'))
-		}
-	},
+	origin: true,
 	optionsSuccessStatus: 200
 };
 
@@ -91,6 +84,14 @@ app.post("/getEmployee", (req, res) => {
 // Send the work log of an employee by id
 app.post("/getEmployeeWorkLog", (req, res) => {
 	db.getEmployeeWorkLog(req.body.id, (workLog) => {
+		res.send(workLog);
+		res.end();
+	});
+});
+
+// Send the work log of an employee by id
+app.post("/getEmployeeLastWorkLog", (req, res) => {
+	db.getEmployeeLastWorkLog(req.body.id, (workLog) => {
 		res.send(workLog);
 		res.end();
 	});
