@@ -35,14 +35,15 @@ const corsOptions = {
 
 // Middleware
 app.use(
-	compression(),
 	cors(corsOptions), // User CORS to restric connections from anywhere other than localhost
+	compression(),
 	bodyParser.json() // Parse JSON requests
 );
 
 app.use((req, res, next) => {
 	if(req.url !== "/checkSession" &&
-	req.url !== "/authenticate") {
+	req.url !== "/authenticate" &&
+	req.url !== "/cardScanned") {
 		const cookies = new Cookies(req.headers.cookie);
 		sessions.forEach((session) => {
 			if(session.key === cookies.get("key")) {
