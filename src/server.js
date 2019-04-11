@@ -17,9 +17,19 @@ const {
 	isNumeric
 } = require("./utils");
 
+var whitelist = [
+	"http://0.0.0.0:3000",
+	"http://0.0.0.0",
+	"http://localhost",
+	"http://192.168.1.150",
+];
+
 const corsOptions = {
 	credentials: true,
-	origin: true,
+	origin: function(origin, callback){
+        var originIsWhitelisted = whitelist.indexOf(origin) !== -1;
+        callback(null, originIsWhitelisted);
+    },
 	optionsSuccessStatus: 200
 };
 
