@@ -20,6 +20,7 @@ const {
 var whitelist = [
 	"http://0.0.0.0:3000",
 	"http://0.0.0.0",
+	"http://localhost:3000",
 	"http://localhost",
 	"http://192.168.1.150",
 ];
@@ -227,16 +228,17 @@ app.get("/export", (req, res) => {
 				for(let i = 1; i <= daysInMonth(startDate.getMonth(), startDate.getFullYear()); i++) {
 					let totalDayWorkTime = 0;
 
-					row[i.toString()] = "0";
+					row[i.toString()] = 0;
 
 					workLog.forEach((log) => {
 						if(!log.end_time) {
-							console.log("error caught");
+							// do not calculate time of this day since the employee hasn't clocked out yet
+							return;
 						}
 						if(new Date(log.start_time).getDate() === i) {
 							totalDayWorkTime += new Date(log.end_time) - new Date(log.start_time);
 							const workTime = millisecondConverter(totalDayWorkTime);
-							const workTimeFormatted = workTime.hours;
+							const workTimeFormatted = workTime.hours.toFixed(2);
 
 							row[i.toString()] = workTimeFormatted;
 						}
@@ -252,7 +254,7 @@ app.get("/export", (req, res) => {
 
 				const totalWorkTimeFormatted = millisecondConverter(totalWorkTime);
 				row["total"] = totalWorkTimeFormatted.hours;
-				row["days"] = totalWorkTimeFormatted.hours / 24;
+				row["days"] = totalWorkTimeFormatted.hours / 8;
 
 				worksheet.addRow(row);
 
