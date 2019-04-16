@@ -7,21 +7,17 @@ const Cookies = require("universal-cookie");
 const db = require("./database");
 const fs = require("fs");
 const Excel = require("exceljs");
-var path = require('path');
-var mime = require('mime');
+const axios = require("axios");
 
 const { 
 	daysInMonth, 
 	millisecondConverter, 
-	isWeekend,
-	isNumeric
+	isWeekend
 } = require("./utils");
 
 var whitelist = [
-	"http://0.0.0.0:3000",
-	"http://0.0.0.0",
+	"http://localhost:8081",
 	"http://localhost:3000",
-	"http://localhost",
 	"http://192.168.1.150",
 ];
 
@@ -42,9 +38,10 @@ app.use(
 );
 
 app.use((req, res, next) => {
-	if(req.url !== "/checkSession" &&
-	req.url !== "/authenticate" &&
-	req.url !== "/cardScanned") {
+	if(req.url !== "/checkSession"
+	&& req.url !== "/authenticate"
+	&& req.url !== "/cardScanned"
+	&& req.url !== "/ping") {
 		const cookies = new Cookies(req.headers.cookie);
 		sessions.forEach((session) => {
 			if(session.key === cookies.get("key")) {
@@ -61,10 +58,38 @@ const server = app.listen(8080, () => {
 	console.log("Server started...\nPORT: 8080");
 });
 
+let scannerConnected = false;
+
 // Server is on and is ready to listen and respond!
 server.on("listening", () => {
 	// Initialize database.
 	db.connect();
+
+	// Ping the scanner to make sure it is running and can be connected to
+	const scannerURL = "http://localhost:8081";
+
+	const request = axios.create({
+		baseURL: scannerURL,
+		withCredentials: true
+	});
+
+	setInterval(() => {
+		request.post("/ping").then((res) => {
+			scannerConnected = res.data;
+		}).catch(() => {
+			scannerConnected = false;
+		});
+	}, 1000);
+});
+
+// ----------------------- Misc -----------------------
+
+app.post("/ping", (req, res) => {
+	res.send({
+		server: true,
+		scanner: scannerConnected,
+	});
+	res.end();
 });
 
 // ----------------------- Employees -----------------------
@@ -157,6 +182,40 @@ app.post("/cardScanned", (req, res) => {
 	db.toggleEmployeeWorkingUID(req.body.uid, () => {
 		res.end();
 	});
+
+	if(checkCard.status) {
+		db.getEmployeeUID(req.body.uid, (employee) => {
+			console.log(employee);
+			if(employee) {
+				checkCard.res.send(employee);
+				checkCard.res.end();
+				checkCard.status = false;
+				checkCard.employee = {};
+			} else {
+				checkCard.res.send(false);
+				checkCard.res.end();
+				checkCard.status = false;
+				checkCard.employee = {};
+			}
+		}); 
+	}
+});
+
+let checkCard = {
+	status: false,
+	res: null
+};
+
+// Client wants to check the employee assigned to the next scanned card
+app.post("/checkCard", (req, res) => {
+	checkCard.res = res;
+	if(req.body.status === true) {
+		checkCard.status = true;
+	} else {
+		checkCard.status = false;
+		checkCard.employee = {};
+		checkCard.res.end();
+	}
 });
 
 // Export employees to an Excel sheet
@@ -386,8 +445,4 @@ app.post("/getUserByKey", (req, res) => {
 			});
 		}
 	});
-
-	if(!result) {
-		//res.end();
-	}
 });

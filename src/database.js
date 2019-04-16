@@ -247,14 +247,12 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 		if(employee) {
 			// Prevent double-scan/misscan
 			exports.getEmployeeLastWorkLog(employee.id, (workLog) => {
-				console.log(workLog);
 				const currentTime = new Date();
 				if(workLog.end_time === null) {
 					// Employee clocking out, so check start_time
 					const startTime = new Date(workLog.start_time);
 					if(currentTime - startTime < 5000) {
 						callback();
-						console.log("clocked out too quick");
 						return;
 					}
 				} else {
@@ -262,14 +260,12 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 					const endTime = new Date(workLog.end_time);
 					if(currentTime - endTime < 5000) {
 						callback();
-						console.log("clocked in too quick");
 						return;
 					}
 				}
 
 				// Employee was found by UID and the work state has been toggled
 				exports.setEmployeeWorking(employee.id, !employee.working, () => {
-					console.log("no issue, toggled work");
 					callback();
 				});
 			});
