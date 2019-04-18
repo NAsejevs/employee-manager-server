@@ -1,4 +1,5 @@
 const sqlite3 = require("sqlite3").verbose();
+const server = require("./server");
 let db = null;
 
 // --- SQLite3 cheat sheet ---
@@ -40,12 +41,32 @@ module.exports.getEmployee = (id, callback) => {
 	});
 }
 
-module.exports.getEmployeeUID = (uid, callback) => {
+module.exports.getEmployeeByUID = (uid, callback) => {
 	db.get(`SELECT * FROM employees WHERE uid="${uid}"`, (err, row) => {
 		if (err) {
 			console.log(err);
 		} else {
 			callback(row);
+		}
+	});
+}
+
+module.exports.setEmployeeUID = (uid, id, callback) => {
+	db.run(`UPDATE employees SET uid="${uid}" WHERE id=${id}`, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
+module.exports.deleteEmployeeUID = (id, callback) => {
+	db.run(`UPDATE employees SET uid=null WHERE id=${id}`, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
 		}
 	});
 }
@@ -242,8 +263,14 @@ module.exports.editEmployee = (employee, callback) => {
 	});
 }
 
+const CARD_SCAN_STATUS = {
+	NO_EMPLOYEE: 0,
+	BEFORE_DELAY: 1,
+	SUCCESS: 2
+}
+
 module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
-	exports.getEmployeeUID(uid, (employee) => {
+	exports.getEmployeeByUID(uid, (employee) => {
 		if(employee) {
 			// Prevent double-scan/misscan
 			exports.getEmployeeLastWorkLog(employee.id, (workLog) => {
@@ -251,29 +278,30 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 				if(workLog.end_time === null) {
 					// Employee clocking out, so check start_time
 					const startTime = new Date(workLog.start_time);
-					if(currentTime - startTime < 5000) {
-						callback();
+					if(currentTime - startTime < server.scanDelay) {
+						callback(CARD_SCAN_STATUS.BEFORE_DELAY);
 						return;
 					}
 				} else {
 					// Employee clocking in, so check end_time
 					const endTime = new Date(workLog.end_time);
-					if(currentTime - endTime < 5000) {
-						callback();
+					if(currentTime - endTime < server.scanDelay) {
+						callback(CARD_SCAN_STATUS.BEFORE_DELAY);
 						return;
 					}
 				}
 
 				// Employee was found by UID and the work state has been toggled
 				exports.setEmployeeWorking(employee.id, !employee.working, () => {
-					callback();
+					callback(CARD_SCAN_STATUS.SUCCESS);
 				});
 			});
 		} else {
-			// No employee with this UID was found, therefore, this is a registration process
-			exports.setEmptyUID(uid, () => {
-				callback();
-			});
+			// No employee with this UID was found
+			callback(CARD_SCAN_STATUS.NO_EMPLOYEE);
+			// exports.setEmptyUID(uid, () => {
+			// 	callback(false);
+			// });
 		}
 	});
 }

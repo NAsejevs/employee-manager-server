@@ -17,7 +17,8 @@ const {
 
 var whitelist = [
 	"http://localhost:8081",
-	"http://localhost:3000",
+	"http://localhost",
+	"http://192.168.1.150:8081",
 	"http://192.168.1.150",
 ];
 
@@ -29,6 +30,8 @@ const corsOptions = {
     },
 	optionsSuccessStatus: 200
 };
+
+module.exports.scanDelay = 5000;
 
 // Middleware
 app.use(
@@ -178,27 +181,49 @@ app.post("/editEmployee", (req, res) => {
 });
 
 // Received scanner information!
-app.post("/cardScanned", (req, res) => {
-	db.toggleEmployeeWorkingUID(req.body.uid, () => {
-		res.end();
-	});
+const CARD_SCAN_STATUS = {
+	NO_EMPLOYEE: 0,
+	BEFORE_DELAY: 1,
+	SUCCESS: 2
+}
 
-	if(checkCard.status) {
-		db.getEmployeeUID(req.body.uid, (employee) => {
-			console.log(employee);
-			if(employee) {
-				checkCard.res.send(employee);
-				checkCard.res.end();
-				checkCard.status = false;
-				checkCard.employee = {};
-			} else {
-				checkCard.res.send(false);
-				checkCard.res.end();
-				checkCard.status = false;
-				checkCard.employee = {};
+app.post("/cardScanned", (req, res) => {
+	db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
+		switch(status) {
+			case CARD_SCAN_STATUS.NO_EMPLOYEE: {
+				if(changeCard.id) {
+					db.setEmployeeUID(req.body.uid, changeCard.id, () => {
+						changeCard.res.send(true);
+						changeCard.res.end();
+					});
+					return;
+				}
+				break;
 			}
-		}); 
-	}
+			case CARD_SCAN_STATUS.BEFORE_DELAY:
+			case CARD_SCAN_STATUS.SUCCESS: {
+				if(checkCard.status) {
+					db.getEmployeeByUID(req.body.uid, (employee) => {
+						console.log(employee);
+						if(employee) {
+							checkCard.res.send(employee);
+							checkCard.res.end();
+							checkCard.status = false;
+							checkCard.employee = {};
+						} else {
+							checkCard.res.send(false);
+							checkCard.res.end();
+							checkCard.status = false;
+							checkCard.employee = {};
+						}
+					}); 
+				}
+
+				res.end();
+				break;
+			}
+		}
+	});
 });
 
 let checkCard = {
@@ -216,6 +241,25 @@ app.post("/checkCard", (req, res) => {
 		checkCard.employee = {};
 		checkCard.res.end();
 	}
+});
+
+let changeCard = {
+	id: null,
+	res: null
+};
+
+// Client wants to change employee's card
+app.post("/changeCard", (req, res) => {
+	changeCard.res = res;
+	changeCard.id = req.body.id;
+});
+
+// Client wants to unassign card from employee
+app.post("/deleteCard", (req, res) => {
+	db.deleteEmployeeUID(req.body.id, () => {
+		res.send(true);
+		res.end();
+	});
 });
 
 // Export employees to an Excel sheet
