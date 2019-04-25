@@ -36,6 +36,7 @@ module.exports.getEmployee = (id, callback) => {
 		if (err) {
 			console.log(err);
 		} else {
+			console.log(row);
 			callback(row);
 		}
 	});
@@ -119,12 +120,18 @@ module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
 module.exports.addEmployee = (employee, callback) => {
 	const query = `INSERT INTO employees (
 		name, 
-		surname, 
-		personalCode
+		surname,
+		position,
+		number,
+		personalCode,
+		working
 	) VALUES (
 		"${employee.name}", 
 		"${employee.surname}",
-		"${employee.personalCode}"
+		"${employee.position}",
+		"${employee.number}",
+		"${employee.personalCode}",
+		0
 	)`;
 
 	db.run(query, function(err) {

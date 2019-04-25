@@ -191,12 +191,25 @@ app.post("/cardScanned", (req, res) => {
 	db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
 		switch(status) {
 			case CARD_SCAN_STATUS.NO_EMPLOYEE: {
-				if(changeCard.id) {
+				console.log("CARD_SCAN_STATUS.NO_EMPLOYEE");
+				if(changeCard.id !== null) {
 					db.setEmployeeUID(req.body.uid, changeCard.id, () => {
 						changeCard.res.send(true);
 						changeCard.res.end();
+						changeCard.id = null;
+						changeCard.res = null;
 					});
-					return;
+				} else if(addCard.id !== null) {
+					console.log("adding card...");
+					console.log("req.body.uid: ", req.body.uid);
+					console.log("addCard.id: ", addCard.id);
+					db.setEmployeeUID(req.body.uid, addCard.id, () => {
+						addCard.res.send(true);
+						addCard.res.end();
+						addCard.id = null;
+						addCard.res = null;
+						console.log("callback");
+					});
 				}
 				break;
 			}
@@ -241,6 +254,19 @@ app.post("/checkCard", (req, res) => {
 		checkCard.employee = {};
 		checkCard.res.end();
 	}
+});
+
+let addCard = {
+	id: null,
+	res: null
+};
+
+// Client wants to change employee's card
+app.post("/addCard", (req, res) => {
+	addCard.res = res;
+	addCard.id = req.body.id;
+	console.log("/addCard");
+	console.log("id: ", req.body);
 });
 
 let changeCard = {
