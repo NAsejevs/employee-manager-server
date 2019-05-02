@@ -123,7 +123,7 @@ app.post("/getEmployee", (req, res) => {
 
 // Send the work log of an employee by id
 app.post("/getEmployeeWorkLog", (req, res) => {
-	db.getEmployeeWorkLog(req.body.id, (workLog) => {
+	db.getEmployeeWorkLog(req.body.id, req.body.order, (workLog) => {
 		res.send(workLog);
 		res.end();
 	});
@@ -191,7 +191,6 @@ app.post("/cardScanned", (req, res) => {
 	db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
 		switch(status) {
 			case CARD_SCAN_STATUS.NO_EMPLOYEE: {
-				console.log("CARD_SCAN_STATUS.NO_EMPLOYEE");
 				if(changeCard.id !== null) {
 					db.setEmployeeUID(req.body.uid, changeCard.id, () => {
 						changeCard.res.send(true);
@@ -200,15 +199,11 @@ app.post("/cardScanned", (req, res) => {
 						changeCard.res = null;
 					});
 				} else if(addCard.id !== null) {
-					console.log("adding card...");
-					console.log("req.body.uid: ", req.body.uid);
-					console.log("addCard.id: ", addCard.id);
 					db.setEmployeeUID(req.body.uid, addCard.id, () => {
 						addCard.res.send(true);
 						addCard.res.end();
 						addCard.id = null;
 						addCard.res = null;
-						console.log("callback");
 					});
 				}
 				break;
@@ -217,7 +212,6 @@ app.post("/cardScanned", (req, res) => {
 			case CARD_SCAN_STATUS.SUCCESS: {
 				if(checkCard.status) {
 					db.getEmployeeByUID(req.body.uid, (employee) => {
-						console.log(employee);
 						if(employee) {
 							checkCard.res.send(employee);
 							checkCard.res.end();
@@ -265,8 +259,6 @@ let addCard = {
 app.post("/addCard", (req, res) => {
 	addCard.res = res;
 	addCard.id = req.body.id;
-	console.log("/addCard");
-	console.log("id: ", req.body);
 });
 
 let changeCard = {
@@ -289,11 +281,22 @@ app.post("/deleteCard", (req, res) => {
 });
 
 // Export employees to an Excel sheet
+let exportSettings = null;
+
+app.post("/export", (req, res) => {
+	exportSettings = { ...req.body.settings };
+	res.end();
+});
+
 app.get("/export", (req, res) => {
-	const startDate = new Date();
-	startDate.setUTCDate(1);
-	const endDate = new Date();
-	endDate.setUTCDate(30);
+	const settings = exportSettings;
+
+	const startDate = new Date(settings.month);
+	startDate.setDate(1);
+	startDate.setHours(0, 0, 0, 0);
+	const endDate = new Date(settings.month);
+	endDate.setDate(daysInMonth(startDate.getMonth(), startDate.getFullYear()));
+	endDate.setHours(23, 59, 59);
 
 	let workbook = new Excel.Workbook();
 	workbook.creator = 'Vārpas 1';
@@ -345,17 +348,23 @@ app.get("/export", (req, res) => {
 	let weekendDays = [];
 
 	db.getEmployees((employees) => {
-		employees.forEach((employee, index) => {
+		settings.employees.forEach((employee, index) => {
 			db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate, (workLog) => {
-
+				console.log("h1")
 				let row = {
 					employee: employee.name + " " + employee.surname
 				}
 
 				// Input all needed data
 				let totalWorkTime = 0;
+				let leftOver;
 				for(let i = 1; i <= daysInMonth(startDate.getMonth(), startDate.getFullYear()); i++) {
 					let totalDayWorkTime = 0;
+
+					if(leftOver) {
+						totalDayWorkTime = leftOver;
+						leftOver = 0;
+					}
 
 					row[i.toString()] = 0;
 
@@ -366,16 +375,24 @@ app.get("/export", (req, res) => {
 						}
 						if(new Date(log.start_time).getDate() === i) {
 							totalDayWorkTime += new Date(log.end_time) - new Date(log.start_time);
-							const workTime = millisecondConverter(totalDayWorkTime);
-							const workTimeFormatted = workTime.hours.toFixed(2);
-
-							row[i.toString()] = workTimeFormatted;
 						}
 					});
+
+					// Check if employee as worked for more than 24h in a single day
+					if(totalDayWorkTime > 86400000) {
+						leftOver = totalDayWorkTime - 86400000;
+						totalDayWorkTime = 86400000;
+					}
+
+					const workTime = millisecondConverter(totalDayWorkTime);
+
+					const workTimeFormatted = workTime.hours.toFixed(2);
+					row[i.toString()] = parseFloat(workTimeFormatted);
+
 					totalWorkTime += totalDayWorkTime;
 
 					const date = new Date(startDate);
-					date.setUTCDate(i - 1);
+					date.setDate(i - 1);
 					if(isWeekend(date)) {
 						weekendDays.push([i]);
 					}
@@ -398,13 +415,16 @@ app.get("/export", (req, res) => {
 						}
 					});
 				});
-				
-				if(employees.length - 1 === index) {
+				console.log("check...")
+				if(settings.employees.length - 1 === index) {
+					console.log("go!");
 					fs.unlink("Varpas 1.xlsx", () => {
 						workbook.xlsx.writeFile("Varpas 1.xlsx")
 						.then(function() {
 							res.download("Varpas 1.xlsx", (e) => {
-								console.log(e);
+								if(e) {
+									console.log(e);
+								}
 								res.end();
 							});
 						});

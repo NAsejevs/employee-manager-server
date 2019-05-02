@@ -84,8 +84,8 @@ module.exports.setEmptyUID = (uid, callback) => {
 	});
 }
 
-module.exports.getEmployeeWorkLog = (id, callback) => {
-	db.all(`SELECT * FROM work_log WHERE employee_id=${id}`, (err, rows) => {
+module.exports.getEmployeeWorkLog = (id, order, callback) => {
+	db.all(`SELECT * FROM work_log WHERE employee_id=${id} ORDER BY start_time ${order}`, (err, rows) => {
 		if (err) {
 			console.log(err);
 		} else {
@@ -253,8 +253,6 @@ module.exports.deleteEmployee = (id, callback) => {
 }
 
 module.exports.editEmployee = (employee, callback) => {
-	console.log(employee);
-
 	const query = `UPDATE employees 
 	SET 
 		name = "${employee.name}",
@@ -310,9 +308,6 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 		} else {
 			// No employee with this UID was found
 			callback(CARD_SCAN_STATUS.NO_EMPLOYEE);
-			// exports.setEmptyUID(uid, () => {
-			// 	callback(false);
-			// });
 		}
 	});
 }
