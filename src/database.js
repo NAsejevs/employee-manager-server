@@ -253,11 +253,15 @@ module.exports.deleteEmployee = (id, callback) => {
 }
 
 module.exports.editEmployee = (employee, callback) => {
+	console.log(employee);
+
 	const query = `UPDATE employees 
 	SET 
 		name = "${employee.name}",
 		surname = "${employee.surname}",
-		personalCode = "${employee.personalCode}"
+		personalCode = "${employee.personalCode}",
+		position = "${employee.position}",
+		number = "${employee.number}"
 	WHERE 
 		id = ${employee.id}`;
 
