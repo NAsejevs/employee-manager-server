@@ -195,6 +195,13 @@ app.post("/getEmployeeComments", (req, res) => {
 	});
 });
 
+// Delete employee's comment
+app.post("/deleteEmployeeComment", (req, res) => {
+	db.deleteEmployeeComment(req.body.commentId, () => {
+		res.end();
+	});
+});
+
 // Received scanner information!
 const CARD_SCAN_STATUS = {
 	NO_EMPLOYEE: 0,

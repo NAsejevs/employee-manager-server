@@ -273,7 +273,7 @@ module.exports.editEmployee = (employee, callback) => {
 
 module.exports.addEmployeeComment = (employee, comment, callback) => {
 	query = `INSERT INTO comments (
-		id, 
+		employee, 
 		text
 	) VALUES (
 		${employee.id}, 
@@ -290,11 +290,26 @@ module.exports.addEmployeeComment = (employee, comment, callback) => {
 }
 
 module.exports.getEmployeeComments = (id, callback) => {
-	db.all(`SELECT * FROM comments WHERE id=${id}`, (err, rows) => {
+	db.all(`SELECT * FROM comments WHERE employee=${id}`, (err, rows) => {
 		if (err) {
 			console.log(err);
 		} else {
 			callback(rows);
+		}
+	});
+}
+
+module.exports.deleteEmployeeComment = (commentId, callback) => {
+	let query = `DELETE FROM comments 
+		WHERE
+		id = ${commentId}
+	`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
 		}
 	});
 }
