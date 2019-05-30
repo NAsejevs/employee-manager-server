@@ -180,6 +180,21 @@ app.post("/editEmployee", (req, res) => {
 	});
 });
 
+// Add a comment for employee
+app.post("/addEmployeeComment", (req, res) => {
+	db.addEmployeeComment(req.body.employee, req.body.comment, () => {
+		res.end();
+	});
+});
+
+// Get single employee's comments
+app.post("/getEmployeeComments", (req, res) => {
+	db.getEmployeeComments(req.body.id, (comments) => {
+		res.send(comments);
+		res.end();
+	});
+});
+
 // Received scanner information!
 const CARD_SCAN_STATUS = {
 	NO_EMPLOYEE: 0,

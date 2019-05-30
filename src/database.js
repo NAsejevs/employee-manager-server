@@ -36,7 +36,6 @@ module.exports.getEmployee = (id, callback) => {
 		if (err) {
 			console.log(err);
 		} else {
-			console.log(row);
 			callback(row);
 		}
 	});
@@ -272,6 +271,34 @@ module.exports.editEmployee = (employee, callback) => {
 	});
 }
 
+module.exports.addEmployeeComment = (employee, comment, callback) => {
+	query = `INSERT INTO comments (
+		id, 
+		text
+	) VALUES (
+		${employee.id}, 
+		"${comment.text}"
+	)`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
+module.exports.getEmployeeComments = (id, callback) => {
+	db.all(`SELECT * FROM comments WHERE id=${id}`, (err, rows) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(rows);
+		}
+	});
+}
+
 const CARD_SCAN_STATUS = {
 	NO_EMPLOYEE: 0,
 	BEFORE_DELAY: 1,
@@ -283,23 +310,24 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 		if(employee) {
 			// Prevent double-scan/misscan
 			exports.getEmployeeLastWorkLog(employee.id, (workLog) => {
-				const currentTime = new Date();
-				if(workLog.end_time === null) {
-					// Employee clocking out, so check start_time
-					const startTime = new Date(workLog.start_time);
-					if(currentTime - startTime < server.scanDelay) {
-						callback(CARD_SCAN_STATUS.BEFORE_DELAY);
-						return;
-					}
-				} else {
-					// Employee clocking in, so check end_time
-					const endTime = new Date(workLog.end_time);
-					if(currentTime - endTime < server.scanDelay) {
-						callback(CARD_SCAN_STATUS.BEFORE_DELAY);
-						return;
+				if(workLog) {
+					const currentTime = new Date();
+					if(workLog.end_time === null) {
+						// Employee clocking out, so check start_time
+						const startTime = new Date(workLog.start_time);
+						if(currentTime - startTime < server.scanDelay) {
+							callback(CARD_SCAN_STATUS.BEFORE_DELAY);
+							return;
+						}
+					} else {
+						// Employee clocking in, so check end_time
+						const endTime = new Date(workLog.end_time);
+						if(currentTime - endTime < server.scanDelay) {
+							callback(CARD_SCAN_STATUS.BEFORE_DELAY);
+							return;
+						}
 					}
 				}
-
 				// Employee was found by UID and the work state has been toggled
 				exports.setEmployeeWorking(employee.id, !employee.working, () => {
 					callback(CARD_SCAN_STATUS.SUCCESS);
