@@ -24,11 +24,11 @@ var whitelist = [
 
 const corsOptions = {
 	credentials: true,
-	origin: function(origin, callback){
-        var originIsWhitelisted = whitelist.indexOf(origin) !== -1;
+	origin: (origin, callback) => {
+        const originIsWhitelisted = whitelist.indexOf(origin) !== -1;
         callback(null, originIsWhitelisted);
     },
-	optionsSuccessStatus: 200
+	optionsSuccessStatus: 200,
 };
 
 module.exports.scanDelay = 5000;
