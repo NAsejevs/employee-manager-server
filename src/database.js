@@ -274,10 +274,12 @@ module.exports.editEmployee = (employee, callback) => {
 module.exports.addEmployeeComment = (employee, comment, callback) => {
 	query = `INSERT INTO comments (
 		employee, 
-		text
+		text,
+		expires
 	) VALUES (
 		${employee.id}, 
-		"${comment.text}"
+		"${comment.text}",
+		"${comment.manualDelete ? null : comment.expires}"
 	)`;
 
 	db.run(query, (err) => {
@@ -285,6 +287,16 @@ module.exports.addEmployeeComment = (employee, comment, callback) => {
 			console.log(err);
 		} else {
 			callback();
+		}
+	});
+}
+
+module.exports.getComments = (callback) => {
+	db.all(`SELECT * FROM comments`, (err, rows) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(rows);
 		}
 	});
 }

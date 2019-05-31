@@ -83,6 +83,17 @@ server.on("listening", () => {
 			scannerConnected = false;
 		});
 	}, 1000);
+
+	// Loop every 1 minute
+	setInterval(() => {
+		db.getComments((comments) => {
+			comments.forEach((comment) => {
+				if(new Date() > new Date(comment.expires) && comment.expires !== null) {
+					db.deleteEmployeeComment(comment.id, () => null);
+				}
+			});
+		});
+	}, 2000);
 });
 
 // ----------------------- Misc -----------------------
