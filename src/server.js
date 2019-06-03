@@ -383,7 +383,6 @@ app.get("/export", (req, res) => {
 	db.getEmployees((employees) => {
 		settings.employees.forEach((employee, index) => {
 			db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate, (workLog) => {
-				console.log("h1")
 				let row = {
 					employee: employee.name + " " + employee.surname
 				}
@@ -448,9 +447,7 @@ app.get("/export", (req, res) => {
 						}
 					});
 				});
-				console.log("check...")
 				if(settings.employees.length - 1 === index) {
-					console.log("go!");
 					fs.unlink("Varpas 1.xlsx", () => {
 						workbook.xlsx.writeFile("Varpas 1.xlsx")
 						.then(function() {
