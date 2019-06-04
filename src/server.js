@@ -110,7 +110,7 @@ app.post("/ping", (req, res) => {
 
 // Add a new employee to the database
 app.post("/addEmployee", (req, res) => {
-	db.addEmployee(req.body, (employee) => {
+	db.addEmployee(req.body.employee, (employee) => {
 		res.send(employee);
 		res.end();
 	});
@@ -221,6 +221,13 @@ const CARD_SCAN_STATUS = {
 }
 
 app.post("/cardScanned", (req, res) => {
+	if(req.body.admin) {
+		// Administration scanner
+
+	} else {
+		// Main employee scanner
+
+	}
 	db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
 		switch(status) {
 			case CARD_SCAN_STATUS.NO_EMPLOYEE: {
