@@ -52,7 +52,7 @@ module.exports.getEmployeeByUID = (uid, callback) => {
 }
 
 module.exports.setEmployeeUID = (uid, id, callback) => {
-	db.run(`UPDATE employees SET uid="${uid}" WHERE id=${id}`, (err) => {
+	db.run(`UPDATE employees SET uid="${uid}", uid_added="${new Date()}" WHERE id=${id}`, (err) => {
 		if (err) {
 			console.log(err);
 		} else {
@@ -61,8 +61,8 @@ module.exports.setEmployeeUID = (uid, id, callback) => {
 	});
 }
 
-module.exports.deleteEmployeeUID = (id, callback) => {
-	db.run(`UPDATE employees SET uid=null WHERE id=${id}`, (err) => {
+module.exports.removeEmployeeUID = (id, callback) => {
+	db.run(`UPDATE employees SET uid=null, uid_added=null WHERE id=${id}`, (err) => {
 		if (err) {
 			console.log(err);
 		} else {

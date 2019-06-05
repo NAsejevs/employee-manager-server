@@ -213,113 +213,6 @@ app.post("/deleteEmployeeComment", (req, res) => {
 	});
 });
 
-// Received scanner information!
-const CARD_SCAN_STATUS = {
-	NO_EMPLOYEE: 0,
-	BEFORE_DELAY: 1,
-	SUCCESS: 2
-}
-
-app.post("/cardScanned", (req, res) => {
-	if(req.body.admin) {
-		// Administration scanner
-
-	} else {
-		// Main employee scanner
-
-	}
-	db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
-		switch(status) {
-			case CARD_SCAN_STATUS.NO_EMPLOYEE: {
-				if(changeCard.id !== null) {
-					db.setEmployeeUID(req.body.uid, changeCard.id, () => {
-						changeCard.res.send(true);
-						changeCard.res.end();
-						changeCard.id = null;
-						changeCard.res = null;
-					});
-				} else if(addCard.id !== null) {
-					db.setEmployeeUID(req.body.uid, addCard.id, () => {
-						addCard.res.send(true);
-						addCard.res.end();
-						addCard.id = null;
-						addCard.res = null;
-					});
-				}
-				break;
-			}
-			case CARD_SCAN_STATUS.BEFORE_DELAY:
-			case CARD_SCAN_STATUS.SUCCESS: {
-				if(checkCard.status) {
-					db.getEmployeeByUID(req.body.uid, (employee) => {
-						if(employee) {
-							checkCard.res.send(employee);
-							checkCard.res.end();
-							checkCard.status = false;
-							checkCard.employee = {};
-						} else {
-							checkCard.res.send(false);
-							checkCard.res.end();
-							checkCard.status = false;
-							checkCard.employee = {};
-						}
-					}); 
-				}
-
-				res.end();
-				break;
-			}
-		}
-	});
-});
-
-let checkCard = {
-	status: false,
-	res: null
-};
-
-// Client wants to check the employee assigned to the next scanned card
-app.post("/checkCard", (req, res) => {
-	checkCard.res = res;
-	if(req.body.status === true) {
-		checkCard.status = true;
-	} else {
-		checkCard.status = false;
-		checkCard.employee = {};
-		checkCard.res.end();
-	}
-});
-
-let addCard = {
-	id: null,
-	res: null
-};
-
-// Client wants to change employee's card
-app.post("/addCard", (req, res) => {
-	addCard.res = res;
-	addCard.id = req.body.id;
-});
-
-let changeCard = {
-	id: null,
-	res: null
-};
-
-// Client wants to change employee's card
-app.post("/changeCard", (req, res) => {
-	changeCard.res = res;
-	changeCard.id = req.body.id;
-});
-
-// Client wants to unassign card from employee
-app.post("/deleteCard", (req, res) => {
-	db.deleteEmployeeUID(req.body.id, () => {
-		res.send(true);
-		res.end();
-	});
-});
-
 // Export employees to an Excel sheet
 let exportSettings = null;
 
@@ -571,5 +464,56 @@ app.post("/getUserByKey", (req, res) => {
 				}
 			});
 		}
+	});
+});
+
+// ----------------------- Card manipulation -----------------------
+
+let awaitCard = {
+	timer: null,
+	status: false,
+	res: null
+};
+
+app.post("/awaitCard", (req, res) => {
+	awaitCard.status = true;
+	awaitCard.res = res;
+	awaitCard.timer = setTimeout(() => {
+		awaitCard.status = false;
+	}, 120000);
+});
+
+app.post("/cardScanned", (req, res) => {
+	console.log(req.body);
+	if(req.body.admin) {
+		// Administration scanner
+		if(awaitCard.status) {
+			console.log(awaitCard);
+			awaitCard.res.send({ uid: req.body.uid });
+			awaitCard.res.end();
+			awaitCard.status = false;
+			clearTimeout(awaitCard.timer);
+		} else {
+			db.toggleEmployeeWorkingUID(req.body.uid);
+		}
+	} else {
+		// Main employee scanner
+		db.toggleEmployeeWorkingUID(req.body.uid);
+	}
+});
+
+// Client wants to unassign card from employee
+app.post("/setEmployeeUID", (req, res) => {
+	db.setEmployeeUID(req.body.uid, req.body.id, () => {
+		res.send(true);
+		res.end();
+	});
+});
+
+// Client wants to unassign card from employee
+app.post("/removeEmployeeUID", (req, res) => {
+	db.removeEmployeeUID(req.body.id, () => {
+		res.send(true);
+		res.end();
 	});
 });
