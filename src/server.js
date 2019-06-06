@@ -480,11 +480,12 @@ app.post("/awaitCard", (req, res) => {
 	awaitCard.res = res;
 	awaitCard.timer = setTimeout(() => {
 		awaitCard.status = false;
+		awaitCard.res.send(false);
+		awaitCard.res.end();
 	}, 120000);
 });
 
 app.post("/cardScanned", (req, res) => {
-	console.log(req.body);
 	if(req.body.admin) {
 		// Administration scanner
 		if(awaitCard.status) {
@@ -493,12 +494,19 @@ app.post("/cardScanned", (req, res) => {
 			awaitCard.res.end();
 			awaitCard.status = false;
 			clearTimeout(awaitCard.timer);
+			res.end();
 		} else {
-			db.toggleEmployeeWorkingUID(req.body.uid);
+			db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
+				res.send({ status });
+				res.end();
+			});
 		}
 	} else {
 		// Main employee scanner
-		db.toggleEmployeeWorkingUID(req.body.uid);
+		db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
+			res.send({ status });
+			res.end();
+		});
 	}
 });
 

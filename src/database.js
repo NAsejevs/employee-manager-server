@@ -21,7 +21,7 @@ module.exports.connect = () => {
 
 // ----------------------- Employees -----------------------
 
-module.exports.getEmployees = (callback) => {
+module.exports.getEmployees = (callback = () => null) => {
 	db.all(`SELECT * FROM employees`, (err, rows) => {
 		if (err) {
 			console.log(err);
@@ -31,7 +31,7 @@ module.exports.getEmployees = (callback) => {
 	});
 }
 
-module.exports.getEmployee = (id, callback) => {
+module.exports.getEmployee = (id, callback = () => null) => {
 	db.get(`SELECT * FROM employees WHERE id=${id}`, (err, row) => {
 		if (err) {
 			console.log(err);
@@ -41,7 +41,7 @@ module.exports.getEmployee = (id, callback) => {
 	});
 }
 
-module.exports.getEmployeeByUID = (uid, callback) => {
+module.exports.getEmployeeByUID = (uid, callback = () => null) => {
 	db.get(`SELECT * FROM employees WHERE uid="${uid}"`, (err, row) => {
 		if (err) {
 			console.log(err);
@@ -51,7 +51,7 @@ module.exports.getEmployeeByUID = (uid, callback) => {
 	});
 }
 
-module.exports.setEmployeeUID = (uid, id, callback) => {
+module.exports.setEmployeeUID = (uid, id, callback = () => null) => {
 	db.run(`UPDATE employees SET uid="${uid}", uid_added="${new Date()}" WHERE id=${id}`, (err) => {
 		if (err) {
 			console.log(err);
@@ -61,7 +61,7 @@ module.exports.setEmployeeUID = (uid, id, callback) => {
 	});
 }
 
-module.exports.removeEmployeeUID = (id, callback) => {
+module.exports.removeEmployeeUID = (id, callback = () => null) => {
 	db.run(`UPDATE employees SET uid=null, uid_added=null WHERE id=${id}`, (err) => {
 		if (err) {
 			console.log(err);
@@ -73,7 +73,7 @@ module.exports.removeEmployeeUID = (id, callback) => {
 
 // Registration process:
 // Go through all employees and assign a UID to whoever doesn't have one
-module.exports.setEmptyUID = (uid, callback) => {
+module.exports.setEmptyUID = (uid, callback = () => null) => {
 	db.run(`UPDATE employees SET uid="${uid}" WHERE uid IS NULL or uid=""`, (err) => {
 		if (err) {
 			console.log(err);
@@ -83,7 +83,7 @@ module.exports.setEmptyUID = (uid, callback) => {
 	});
 }
 
-module.exports.getEmployeeWorkLog = (id, order, callback) => {
+module.exports.getEmployeeWorkLog = (id, order, callback = () => null) => {
 	db.all(`SELECT * FROM work_log WHERE employee_id=${id} ORDER BY start_time ${order}`, (err, rows) => {
 		if (err) {
 			console.log(err);
@@ -93,7 +93,7 @@ module.exports.getEmployeeWorkLog = (id, order, callback) => {
 	});
 }
 
-module.exports.getEmployeeLastWorkLog = (id, callback) => {
+module.exports.getEmployeeLastWorkLog = (id, callback = () => null) => {
 	db.get(`SELECT * FROM work_log WHERE employee_id=${id} ORDER BY start_time DESC`, (err, row) => {
 		if (err) {
 			console.log(err);
@@ -103,7 +103,7 @@ module.exports.getEmployeeLastWorkLog = (id, callback) => {
 	});
 }
 
-module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
+module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback = () => null) => {
 	const fromJSON = new Date(from).toJSON();
 	const toJSON = new Date(to).toJSON();
 
@@ -116,24 +116,17 @@ module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback) => {
 	});
 }
 
-module.exports.addEmployee = (employee, callback) => {
-	const query = `INSERT INTO employees (
-		name, 
-		surname,
-		position,
-		number,
-		personalCode,
-		working
-	) VALUES (
-		"${employee.name}", 
-		"${employee.surname}",
-		"${employee.position}",
-		"${employee.number}",
-		"${employee.personalCode}",
-		0
-	)`;
+module.exports.addEmployee = (employee, callback = () => null) => {
+	const query = db.prepare("INSERT INTO employees (name, surname, company, position, number, personalCode, working) VALUES (?, ?, ?, ?, ?, ?, 0)");
 
-	db.run(query, function(err) {
+	query.run([
+		employee.name,
+		employee.surname,
+		employee.company,
+		employee.position,
+		employee.number,
+		employee.personalCode
+	], function(err) {
 		if (err) {
 			console.log(err);
 		} else {
@@ -145,7 +138,7 @@ module.exports.addEmployee = (employee, callback) => {
 	});
 }
 
-module.exports.setEmployeeWorking = (id, working, callback) => {
+module.exports.setEmployeeWorking = (id, working, callback = () => null) => {
 	const date = new Date();
 	const jsonDate = date.toJSON();
 	let query = "";
@@ -197,7 +190,7 @@ module.exports.setEmployeeWorking = (id, working, callback) => {
 	});
 }
 
-module.exports.setEmployeeArchived = (id, archive, callback) => {
+module.exports.setEmployeeArchived = (id, archive, callback = () => null) => {
 	const query = `UPDATE employees SET 
 		archived = ${archive ? 1 : 0}
 		WHERE id = ${id}`;
@@ -211,7 +204,7 @@ module.exports.setEmployeeArchived = (id, archive, callback) => {
 	});
 }
 
-module.exports.setEmployeeActive = (id, active, callback) => {
+module.exports.setEmployeeActive = (id, active, callback = () => null) => {
 	const query = `UPDATE employees SET 
 		active = ${active ? 1 : 0}
 		WHERE id = ${id}`;
@@ -225,7 +218,7 @@ module.exports.setEmployeeActive = (id, active, callback) => {
 	});
 }
 
-module.exports.deleteEmployee = (id, callback) => {
+module.exports.deleteEmployee = (id, callback = () => null) => {
 	let query = `DELETE FROM employees 
 		WHERE
 		id = ${id}
@@ -251,18 +244,27 @@ module.exports.deleteEmployee = (id, callback) => {
 	});
 }
 
-module.exports.editEmployee = (employee, callback) => {
-	const query = `UPDATE employees 
-	SET 
-		name = "${employee.name}",
-		surname = "${employee.surname}",
-		personalCode = "${employee.personalCode}",
-		position = "${employee.position}",
-		number = "${employee.number}"
-	WHERE 
-		id = ${employee.id}`;
+module.exports.editEmployee = (employee, callback = () => null) => {
+	const query = db.prepare(`UPDATE employees 
+		SET 
+			name = ?,
+			surname = ?,
+			personalCode = ?,
+			company = ?,
+			position = ?,
+			number = ?
+		WHERE 
+			id = ?`);
 
-	db.run(query, (err) => {
+	query.run([
+		employee.name,
+		employee.surname,
+		employee.personalCode,
+		employee.company,
+		employee.position,
+		employee.number,
+		employee.id
+	], (err) => {
 		if (err) {
 			console.log(err);
 		} else {
@@ -271,7 +273,7 @@ module.exports.editEmployee = (employee, callback) => {
 	});
 }
 
-module.exports.addEmployeeComment = (employee, comment, callback) => {
+module.exports.addEmployeeComment = (employee, comment, callback = () => null) => {
 	query = `INSERT INTO comments (
 		employee, 
 		text,
@@ -291,7 +293,7 @@ module.exports.addEmployeeComment = (employee, comment, callback) => {
 	});
 }
 
-module.exports.getComments = (callback) => {
+module.exports.getComments = (callback = () => null) => {
 	db.all(`SELECT * FROM comments`, (err, rows) => {
 		if (err) {
 			console.log(err);
@@ -301,7 +303,7 @@ module.exports.getComments = (callback) => {
 	});
 }
 
-module.exports.getEmployeeComments = (id, callback) => {
+module.exports.getEmployeeComments = (id, callback = () => null) => {
 	db.all(`SELECT * FROM comments WHERE employee=${id}`, (err, rows) => {
 		if (err) {
 			console.log(err);
@@ -311,7 +313,7 @@ module.exports.getEmployeeComments = (id, callback) => {
 	});
 }
 
-module.exports.deleteEmployeeComment = (commentId, callback) => {
+module.exports.deleteEmployeeComment = (commentId, callback = () => null) => {
 	let query = `DELETE FROM comments 
 		WHERE
 		id = ${commentId}
@@ -326,15 +328,14 @@ module.exports.deleteEmployeeComment = (commentId, callback) => {
 	});
 }
 
-const CARD_SCAN_STATUS = {
-	NO_EMPLOYEE: 0,
-	BEFORE_DELAY: 1,
-	SUCCESS: 2
-}
-
-module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
+module.exports.toggleEmployeeWorkingUID = (uid, callback = () => null) => {
 	exports.getEmployeeByUID(uid, (employee) => {
 		if(employee) {
+			if(!employee.active) {
+				callback(0);
+				return;
+			}
+
 			// Prevent double-scan/misscan
 			exports.getEmployeeLastWorkLog(employee.id, (workLog) => {
 				if(workLog) {
@@ -343,33 +344,31 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback) => {
 						// Employee clocking out, so check start_time
 						const startTime = new Date(workLog.start_time);
 						if(currentTime - startTime < server.scanDelay) {
-							callback(CARD_SCAN_STATUS.BEFORE_DELAY);
+							callback(2);
 							return;
 						}
 					} else {
 						// Employee clocking in, so check end_time
 						const endTime = new Date(workLog.end_time);
 						if(currentTime - endTime < server.scanDelay) {
-							callback(CARD_SCAN_STATUS.BEFORE_DELAY);
+							callback(2);
 							return;
 						}
 					}
 				}
 				// Employee was found by UID and the work state has been toggled
-				exports.setEmployeeWorking(employee.id, !employee.working, () => {
-					callback(CARD_SCAN_STATUS.SUCCESS);
-				});
+				exports.setEmployeeWorking(employee.id, !employee.working);
+				callback(1);
 			});
 		} else {
-			// No employee with this UID was found
-			callback(CARD_SCAN_STATUS.NO_EMPLOYEE);
+			callback(0);
 		}
 	});
 }
 
 // ----------------------- Users -----------------------
 
-module.exports.getUserByUsername = (username, callback) => {
+module.exports.getUserByUsername = (username, callback = () => null) => {
 	db.get(`SELECT * FROM users WHERE username="${username}"`, (err, row) => {
 		if (err) {
 			console.log(err);
