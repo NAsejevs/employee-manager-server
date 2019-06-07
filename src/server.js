@@ -156,6 +156,20 @@ app.post("/getEmployeeWorkLogFromTo", (req, res) => {
 	});
 });
 
+// Delete a work log by ID
+app.post("/deleteWorkLog", (req, res) => {
+	db.deleteWorkLog(req.body.id, req.body.working, req.body.employeeId, () => {
+		res.end();
+	});
+});
+
+// Edit a work log by ID
+app.post("/editWorkLog", (req, res) => {
+	db.editWorkLog(req.body.id, req.body.startDate, req.body.endDate, req.body.working, () => {
+		res.end();
+	});
+});
+
 // Toggle the employee's working state
 app.post("/setEmployeeWorking", (req, res) => {
 	db.setEmployeeWorking(req.body.id, req.body.working, () => {

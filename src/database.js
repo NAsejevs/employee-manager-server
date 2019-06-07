@@ -116,6 +116,60 @@ module.exports.getEmployeeWorkLogFromTo = (id, from, to, callback = () => null) 
 	});
 }
 
+module.exports.deleteWorkLog = (id, working, employeeId, callback = () => null) => {
+	let query = `DELETE FROM work_log 
+		WHERE
+		id = ${id}
+	`;
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			if(working) {
+				// A work logs has been deleted while the employee is still working on it, so set the employee to not working
+				query = `UPDATE employees SET 
+					working = 0
+					WHERE id = ${employeeId}`;
+
+				db.run(query, (err) => {
+					if (err) {
+						console.log(err);
+					} else {
+						callback();
+					}
+				});
+
+			} else {
+				callback();
+			}
+		}
+	});
+}
+
+module.exports.editWorkLog = (id, startDate, endDate, working, callback = () => null) => {
+	let query = `UPDATE work_log SET 
+		start_time="${startDate}", 
+		end_time="${endDate}" 
+	WHERE 
+		id=${id}`;
+
+	if(working) {
+		query = `UPDATE work_log SET 
+		start_time="${startDate}"
+	WHERE 
+		id=${id}`;
+	}
+
+	db.run(query, (err) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback();
+		}
+	});
+}
+
 module.exports.addEmployee = (employee, callback = () => null) => {
 	const query = db.prepare("INSERT INTO employees (name, surname, company, position, number, personalCode, working) VALUES (?, ?, ?, ?, ?, ?, 0)");
 
