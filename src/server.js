@@ -503,7 +503,6 @@ app.post("/cardScanned", (req, res) => {
 	if(req.body.admin) {
 		// Administration scanner
 		if(awaitCard.status) {
-			console.log(awaitCard);
 			awaitCard.res.send({ uid: req.body.uid });
 			awaitCard.res.end();
 			awaitCard.status = false;
@@ -522,6 +521,14 @@ app.post("/cardScanned", (req, res) => {
 			res.end();
 		});
 	}
+});
+
+// Client wants to unassign card from employee
+app.post("/getEmployeeByUID", (req, res) => {
+	db.getEmployeeByUID(req.body.uid, (row) => {
+		res.send(row);
+		res.end();
+	});
 });
 
 // Client wants to unassign card from employee
