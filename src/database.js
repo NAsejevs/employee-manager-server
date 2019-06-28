@@ -171,7 +171,7 @@ module.exports.editWorkLog = (id, startDate, endDate, working, callback = () => 
 }
 
 module.exports.addEmployee = (employee, callback = () => null) => {
-	const query = db.prepare("INSERT INTO employees (name, surname, company, position, number, personalCode, working) VALUES (?, ?, ?, ?, ?, ?, 0)");
+	const query = db.prepare("INSERT INTO employees (name, surname, company, position, number, personalCode, working, uid) VALUES (?, ?, ?, ?, ?, ?, 0, ?)");
 
 	query.run([
 		employee.name,
@@ -179,7 +179,8 @@ module.exports.addEmployee = (employee, callback = () => null) => {
 		employee.company,
 		employee.position,
 		employee.number,
-		employee.personalCode
+		employee.personalCode,
+		employee.uid,
 	], function(err) {
 		if (err) {
 			console.log(err);

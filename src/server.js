@@ -298,7 +298,7 @@ app.get("/export", (req, res) => {
 		settings.employees.forEach((employee, index) => {
 			db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate, (workLog) => {
 				let row = {
-					employee: employee.name + " " + employee.surname
+					employee: employee.surname + " " + employee.name
 				}
 
 				// Input all needed data
@@ -501,6 +501,7 @@ app.post("/awaitCard", (req, res) => {
 
 app.post("/cardScanned", (req, res) => {
 	if(req.body.admin) {
+		console.log("/cardScanner admin");
 		// Administration scanner
 		if(awaitCard.status) {
 			awaitCard.res.send({ uid: req.body.uid });

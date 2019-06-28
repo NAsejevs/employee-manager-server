@@ -26,7 +26,7 @@ module.exports.millisecondConverter = (ms) => {
 
 module.exports.isWeekend = (date) => {
 	const day = date.getDay();
-	return ((day === 6) || (day === 0));
+	return ((day === 5) || (day === 6));
 }
 
 module.exports.isNumeric = (n) => {
