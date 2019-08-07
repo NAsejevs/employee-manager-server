@@ -387,7 +387,7 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback = () => null) => {
 	exports.getEmployeeByUID(uid, (employee) => {
 		if(employee) {
 			if(!employee.active) {
-				callback(0);
+				callback({status: 0, employee});
 				return;
 			}
 
@@ -399,24 +399,24 @@ module.exports.toggleEmployeeWorkingUID = (uid, callback = () => null) => {
 						// Employee clocking out, so check start_time
 						const startTime = new Date(workLog.start_time);
 						if(currentTime - startTime < server.scanDelay) {
-							callback(2);
+							callback({status: 2, employee});
 							return;
 						}
 					} else {
 						// Employee clocking in, so check end_time
 						const endTime = new Date(workLog.end_time);
 						if(currentTime - endTime < server.scanDelay) {
-							callback(2);
+							callback({status: 2, employee});
 							return;
 						}
 					}
 				}
 				// Employee was found by UID and the work state has been toggled
 				exports.setEmployeeWorking(employee.id, !employee.working);
-				callback(1);
+				callback({status: 1, employee});
 			});
 		} else {
-			callback(0);
+			callback({status: 0, employee: null});
 		}
 	});
 }

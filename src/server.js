@@ -501,7 +501,7 @@ app.post("/awaitCard", (req, res) => {
 
 app.post("/cardScanned", (req, res) => {
 	if(req.body.admin) {
-		console.log("/cardScanner admin");
+		console.log("Admin card scan");
 		// Administration scanner
 		if(awaitCard.status) {
 			awaitCard.res.send({ uid: req.body.uid });
@@ -510,15 +510,15 @@ app.post("/cardScanned", (req, res) => {
 			clearTimeout(awaitCard.timer);
 			res.end();
 		} else {
-			db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
-				res.send({ status });
+			db.toggleEmployeeWorkingUID(req.body.uid, (data) => {
+				res.send(data);
 				res.end();
 			});
 		}
 	} else {
 		// Main employee scanner
-		db.toggleEmployeeWorkingUID(req.body.uid, (status) => {
-			res.send({ status });
+		db.toggleEmployeeWorkingUID(req.body.uid, (data) => {
+			res.send(data);
 			res.end();
 		});
 	}
