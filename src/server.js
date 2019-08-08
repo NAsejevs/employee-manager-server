@@ -141,7 +141,7 @@ if (cluster.isWorker) {
 
 			let x = 0;
 			const employeesLoop = () => {
-				db.getEmployeeWorkLog(employees[x].id, "DESC", (workLog) => {
+				db.getEmployeeWorkLog(employees[x].id, "ASC", (workLog) => {
 					db.getEmployeeComments(employees[x].id, (comments) => {
 						combinedEmployees.push({
 							...employees[x],
@@ -168,7 +168,7 @@ if (cluster.isWorker) {
 	// Send the client a signle employee by ID.
 	app.post("/getEmployee", (req, res) => {
 		db.getEmployee(req.body.id, (employee) => {
-			db.getEmployeeWorkLog(employee.id, "DESC", (workLog) => {
+			db.getEmployeeWorkLog(employee.id, "ASC", (workLog) => {
 				db.getEmployeeComments(employee.id, (comments) => {
 					res.send({
 						...employee,
