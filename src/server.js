@@ -138,23 +138,30 @@ if (cluster.isWorker) {
 	app.post("/getEmployees", (req, res) => {
 		db.getEmployees((employees) => {
 			const combinedEmployees = [];
-			employees.forEach((employee, index) => {
-				db.getEmployeeWorkLog(employee.id, "DESC", (workLog) => {
-					db.getEmployeeComments(employee.id, (comments) => {
+
+			let x = 0;
+			const employeesLoop = () => {
+				db.getEmployeeWorkLog(employees[x].id, "DESC", (workLog) => {
+					db.getEmployeeComments(employees[x].id, (comments) => {
 						combinedEmployees.push({
-							...employee,
+							...employees[x],
 							workLog: workLog,
 							comments: comments,
 						});
-	
-						if(employees.length - 1 <= index) {
+
+						if(x < employees.length - 1) {
+							x++;
+							employeesLoop();
+						} else {
 							res.send(combinedEmployees);
 							res.end();
 							return;
 						}
 					});
 				});
-			});
+			}
+
+			employeesLoop();
 		});
 	});
 	
@@ -467,7 +474,7 @@ if (cluster.isWorker) {
 	
 					// Generate new session key for the user
 					res.cookie("key", key, { expires: new Date(Date.now() + (rememberMe ? week : day)), httpOnly: true });
-					res.cookie("settings", { username: username }, { expires: new Date(Date.now() + (rememberMe ? week : day)) });
+					//res.cookie("settings", { username: username }, { expires: new Date(Date.now() + (rememberMe ? week : day)) });
 					sessions.push({ id: user.id, username: username, key: key });
 	
 					res.send(true);
