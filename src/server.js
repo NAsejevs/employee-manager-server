@@ -180,6 +180,19 @@ if (cluster.isWorker) {
 			});
 		});
 	});
+
+	app.post("/getSchedules", (req, res) => {
+		db.getSchedules(req.body.month, (schedules) => {
+			res.send(schedules);
+			res.end();
+		});
+	});
+
+	app.post("/saveSchedules", (req, res) => {
+		db.saveSchedules(req.body.schedules, () => {
+			res.end();
+		});
+	});
 	
 	// Send the work log of an employee by id
 	app.post("/getEmployeeWorkLog", (req, res) => {

@@ -83,6 +83,69 @@ module.exports.setEmptyUID = (uid, callback = () => null) => {
 	});
 }
 
+module.exports.getSchedules = (month, callback = () => null) => {
+	db.all(`SELECT * FROM schedules WHERE month=${month}`, (err, rows) => {
+		if (err) {
+			console.log(err);
+		} else {
+			callback(rows);
+		}
+	});
+}
+
+module.exports.saveSchedules = (schedules, callback = () => null) => {
+	const promise = new Promise((resolve, reject) => {
+		schedules.forEach((schedule, index) => {
+			const updateQuery = `UPDATE schedules SET 
+				employee_id=?,
+				month=?,
+				days=?
+				WHERE 
+				employee_id=${schedule.employee_id}
+				AND
+				month=${schedule.month}`
+	
+			const insertQuery = `INSERT INTO schedules (
+					employee_id,
+					month,
+					days
+				)  VALUES (
+					?,
+					?,
+					?
+				)`;
+	
+			const params = [
+				schedule.employee_id,
+				schedule.month,
+				JSON.stringify(schedule.days)
+			];
+	
+			db.run(updateQuery, params, function(err) {
+				if (err) {
+					console.log(err);
+				} else {
+					if(!this.changes) {
+						db.run(insertQuery, params, function(err) {
+							if (err) {
+								console.log(err);
+							} else {
+								if (index === schedules.length -1) resolve();
+							}
+						});
+					} else {
+						if (index === schedules.length -1) resolve();
+					}
+				}
+			});
+		});
+	});
+
+	promise.then(() => {
+		callback();
+	})
+}
+
 module.exports.getEmployeeWorkLog = (id, order, callback = () => null) => {
 	db.all(`SELECT * FROM work_log WHERE employee_id=${id} ORDER BY start_time ${order}`, (err, rows) => {
 		if (err) {
