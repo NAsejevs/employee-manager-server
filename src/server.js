@@ -33,6 +33,7 @@ if (cluster.isWorker) {
 	
 	var whitelist = [
 		"http://localhost:8081",
+		"http://localhost:5000",
 		"http://localhost",
 		"http://192.168.1.150:8081",
 		"http://192.168.1.150",
@@ -128,7 +129,7 @@ if (cluster.isWorker) {
 	
 	// Add a new employee to the database
 	app.post("/addEmployee", (req, res) => {
-		db.addEmployee(req.body.employee, (employee) => {
+		db.addEmployee(req.body.employee).then((employee) => {
 			res.send(employee);
 			res.end();
 		});
@@ -136,67 +137,73 @@ if (cluster.isWorker) {
 	
 	// Send the client the full list of employees.
 	app.post("/getEmployees", (req, res) => {
-		db.getEmployees((employees) => {
-			const combinedEmployees = [];
-
-			let x = 0;
-			const employeesLoop = () => {
-				db.getEmployeeWorkLog(employees[x].id, "ASC", (workLog) => {
-					db.getEmployeeComments(employees[x].id, (comments) => {
-						combinedEmployees.push({
-							...employees[x],
-							workLog: workLog,
-							comments: comments,
+		db.getEmployees().then((employees) => {
+			let allEmployees = employees.map((employee) => {
+				return new Promise((resolve, reject) => {
+					Promise.all([
+						db.getEmployeeWorkLog(employee.id, "ASC"),
+						db.getEmployeeComments(employee.id),
+						db.getEmployeeSchedules(employee.id, new Date().getMonth())
+					]).then((data) => {
+						resolve({
+							...employee,
+							workLog: data[0],
+							comments: data[1],
+							schedules: data[2],
 						});
-
-						if(x < employees.length - 1) {
-							x++;
-							employeesLoop();
-						} else {
-							res.send(combinedEmployees);
-							res.end();
-							return;
-						}
+					}).catch((err) => {
+						reject(err);
 					});
 				});
-			}
+			});
 
-			employeesLoop();
+			Promise.all(allEmployees).then((data) => {
+				res.send(data);
+				res.end();
+			});
 		});
 	});
 	
 	// Send the client a signle employee by ID.
 	app.post("/getEmployee", (req, res) => {
-		db.getEmployee(req.body.id, (employee) => {
-			db.getEmployeeWorkLog(employee.id, "ASC", (workLog) => {
-				db.getEmployeeComments(employee.id, (comments) => {
-					res.send({
-						...employee,
-						workLog: workLog,
-						comments: comments,
-					});
-					res.end();
+		db.getEmployee(req.body.id).then((employee) => {
+			Promise.all([
+				db.getEmployeeWorkLog(employee.id, "ASC"),
+				db.getEmployeeComments(employee.id)
+			]).then((data) => {
+				res.send({
+					...employee,
+					workLog: data[0],
+					comments: data[1],
 				});
+				res.end();
 			});
 		});
 	});
 
 	app.post("/getSchedules", (req, res) => {
-		db.getSchedules(req.body.month, (schedules) => {
+		db.getSchedules(req.body.month).then((schedules) => {
+			res.send(schedules);
+			res.end();
+		});
+	});
+
+	app.post("/getEmployeeSchedules", (req, res) => {
+		db.getEmployeeSchedules(req.body.id, req.body.month).then((schedules) => {
 			res.send(schedules);
 			res.end();
 		});
 	});
 
 	app.post("/saveSchedules", (req, res) => {
-		db.saveSchedules(req.body.schedules, () => {
+		db.saveSchedules(req.body.schedules).then(() => {
 			res.end();
 		});
 	});
 	
 	// Send the work log of an employee by id
 	app.post("/getEmployeeWorkLog", (req, res) => {
-		db.getEmployeeWorkLog(req.body.id, req.body.order, (workLog) => {
+		db.getEmployeeWorkLog(req.body.id, req.body.order).then((workLog) => {
 			res.send(workLog);
 			res.end();
 		});
@@ -204,7 +211,7 @@ if (cluster.isWorker) {
 	
 	// Send the work log of an employee by id
 	app.post("/getEmployeeLastWorkLog", (req, res) => {
-		db.getEmployeeLastWorkLog(req.body.id, (workLog) => {
+		db.getEmployeeLastWorkLog(req.body.id).then((workLog) => {
 			res.send(workLog);
 			res.end();
 		});
@@ -212,7 +219,7 @@ if (cluster.isWorker) {
 	
 	// Send the work log of an employee by id from date to date
 	app.post("/getEmployeeWorkLogFromTo", (req, res) => {
-		db.getEmployeeWorkLogFromTo(req.body.id, req.body.from, req.body.to, (workLog) => {
+		db.getEmployeeWorkLogFromTo(req.body.id, req.body.from, req.body.to).then((workLog) => {
 			res.send(workLog);
 			res.end();
 		});
@@ -220,63 +227,63 @@ if (cluster.isWorker) {
 	
 	// Delete a work log by ID
 	app.post("/deleteWorkLog", (req, res) => {
-		db.deleteWorkLog(req.body.id, req.body.working, req.body.employeeId, () => {
+		db.deleteWorkLog(req.body.id, req.body.working, req.body.employeeId).then(() => {
 			res.end();
 		});
 	});
 	
 	// Edit a work log by ID
 	app.post("/editWorkLog", (req, res) => {
-		db.editWorkLog(req.body.id, req.body.startDate, req.body.endDate, req.body.working, () => {
+		db.editWorkLog(req.body.id, req.body.startDate, req.body.endDate, req.body.working).then(() => {
 			res.end();
 		});
 	});
 	
 	// Toggle the employee's working state
 	app.post("/setEmployeeWorking", (req, res) => {
-		db.setEmployeeWorking(req.body.id, req.body.working, () => {
+		db.setEmployeeWorking(req.body.id, req.body.working).then(() => {
 			res.end();
 		});
 	});
 	
 	// Set the employee's archive state
 	app.post("/setArchivedEmployee", (req, res) => {
-		db.setEmployeeArchived(req.body.id, req.body.archived, () => {
+		db.setEmployeeArchived(req.body.id, req.body.archived).then(() => {
 			res.end();
 		});
 	});
 	
 	// Set the employee's active state
 	app.post("/setActiveEmployee", (req, res) => {
-		db.setEmployeeActive(req.body.id, req.body.active, () => {
+		db.setEmployeeActive(req.body.id, req.body.active).then(() => {
 			res.end();
 		});
 	});
 	
 	// Delete the employee from it's ID
 	app.post("/deleteEmployee", (req, res) => {
-		db.deleteEmployee(req.body.id, () => {
+		db.deleteEmployee(req.body.id).then(() => {
 			res.end();
 		});
 	});
 	
 	// Edit the employee's data
 	app.post("/editEmployee", (req, res) => {
-		db.editEmployee(req.body.employee, () => {
+		db.editEmployee(req.body.employee).then(() => {
 			res.end();
 		});
 	});
 	
 	// Add a comment for employee
 	app.post("/addEmployeeComment", (req, res) => {
-		db.addEmployeeComment(req.body.employee, req.body.comment, () => {
+		db.addEmployeeComment(req.body.employee, req.body.comment).then(() => {
 			res.end();
 		});
 	});
 	
 	// Get single employee's comments
 	app.post("/getEmployeeComments", (req, res) => {
-		db.getEmployeeComments(req.body.id, (comments) => {
+		db.getEmployeeComments(req.body.id).then((comments) => {
 			res.send(comments);
 			res.end();
 		});
@@ -284,7 +291,7 @@ if (cluster.isWorker) {
 	
 	// Delete employee's comment
 	app.post("/deleteEmployeeComment", (req, res) => {
-		db.deleteEmployeeComment(req.body.commentId, () => {
+		db.deleteEmployeeComment(req.body.commentId).then(() => {
 			res.end();
 		});
 	});
@@ -358,7 +365,7 @@ if (cluster.isWorker) {
 	
 		db.getEmployees((employees) => {
 			settings.employees.forEach((employee, index) => {
-				db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate, (workLog) => {
+				db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate).then((workLog) => {
 					let row = {
 						employee: employee.surname + " " + employee.name
 					}
@@ -480,7 +487,7 @@ if (cluster.isWorker) {
 		const day = 86400000; // in ms
 		const week = 604800000; // in ms
 	
-		db.getUserByUsername(username, (user) => {
+		db.getUserByUsername(username).then((user) => {
 			if(user) {
 				if(user.password == password) {
 					const key = keyGen(16);
@@ -518,7 +525,7 @@ if (cluster.isWorker) {
 	app.post("/getUserByUsername", (req, res) => {
 		const username = req.body.username;
 	
-		db.getUserByUsername(username, (user) => {
+		db.getUserByUsername(username).then((user) => {
 			if(user) {
 				res.send(user);
 			}
@@ -532,7 +539,7 @@ if (cluster.isWorker) {
 		let result = false;
 		sessions.forEach(session => {
 			if(session.key === cookies.get("key")) {
-				db.getUserByUsername(session.username, (user) => {
+				db.getUserByUsername(session.username).then((user) => {
 					if(user) {
 						result = true;
 						res.send(user);
@@ -572,14 +579,14 @@ if (cluster.isWorker) {
 				clearTimeout(awaitCard.timer);
 				res.end();
 			} else {
-				db.toggleEmployeeWorkingUID(req.body.uid, (data) => {
+				db.toggleEmployeeWorkingUID(req.body.uid).then((data) => {
 					res.send(data);
 					res.end();
 				});
 			}
 		} else {
 			// Main employee scanner
-			db.toggleEmployeeWorkingUID(req.body.uid, (data) => {
+			db.toggleEmployeeWorkingUID(req.body.uid).then((data) => {
 				res.send(data);
 				res.end();
 			});
@@ -588,7 +595,7 @@ if (cluster.isWorker) {
 	
 	// Client wants to unassign card from employee
 	app.post("/getEmployeeByUID", (req, res) => {
-		db.getEmployeeByUID(req.body.uid, (row) => {
+		db.getEmployeeByUID(req.body.uid).then((row) => {
 			res.send(row);
 			res.end();
 		});
@@ -596,7 +603,7 @@ if (cluster.isWorker) {
 	
 	// Client wants to unassign card from employee
 	app.post("/setEmployeeUID", (req, res) => {
-		db.setEmployeeUID(req.body.uid, req.body.id, () => {
+		db.setEmployeeUID(req.body.uid, req.body.id).then(() => {
 			res.send(true);
 			res.end();
 		});
@@ -604,7 +611,7 @@ if (cluster.isWorker) {
 	
 	// Client wants to unassign card from employee
 	app.post("/removeEmployeeUID", (req, res) => {
-		db.removeEmployeeUID(req.body.id, () => {
+		db.removeEmployeeUID(req.body.id).then(() => {
 			res.send(true);
 			res.end();
 		});
