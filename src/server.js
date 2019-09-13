@@ -105,14 +105,54 @@ if (cluster.isWorker) {
 	
 		// Loop every 1 minute
 		setInterval(() => {
-			db.getComments((comments) => {
+			db.getComments().then((comments) => {
 				comments.forEach((comment) => {
 					if(new Date() > new Date(comment.expires) && comment.expires !== null) {
-						db.deleteEmployeeComment(comment.id, () => null);
+						db.deleteEmployeeComment(comment.id);
 					}
 				});
 			});
-		}, 2000);
+		}, 60000);
+
+		// Loop every 45 seconds to guarantee a cycle each minute
+		setInterval(() => {
+			db.getEmployees().then(employees => {
+				const currentDate = new Date();
+				console.log(currentDate);
+				const day = currentDate.getDate() - 1;
+
+				db.getSchedules(currentDate.getMonth()).then(schedules => {
+					schedules.forEach((schedule) => {
+						const employee = employees.find((employee) => {
+							return employee.id === schedule.employee_id;
+						});
+						if(employee !== undefined) {
+							if(!employee.working) {
+								const days = JSON.parse(schedule.days);
+							
+								switch(days[day]) {
+									case "D": {
+										if(currentDate.getHours() === 14 && currentDate.getMinutes() === 58) {
+											db.addNotification("EMPLOYEE_LATE", {...employee});
+										}
+										break;
+									}
+									case "N": {
+										if(currentDate.getHours() === 17 && currentDate.getMinutes() === 0) {
+											db.addNotification("EMPLOYEE_LATE", {...employee});
+										}
+										break;
+									}
+									default: {
+										break;
+									}
+								}
+							}
+						}
+					});
+				});
+			});
+		}, 45000);
 	});
 	
 	// ----------------------- Misc -----------------------
@@ -178,6 +218,13 @@ if (cluster.isWorker) {
 				});
 				res.end();
 			});
+		});
+	});
+
+	app.post("/getNotifications", (req, res) => {
+		db.getNotifications().then((notifications) => {
+			res.send(notifications);
+			res.end();
 		});
 	});
 

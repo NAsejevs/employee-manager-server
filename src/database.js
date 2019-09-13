@@ -83,6 +83,35 @@ module.exports.setEmptyUID = (uid) => new Promise((resolve, reject) => {
 	});
 })
 
+module.exports.getNotifications = () => new Promise((resolve, reject) => {
+	db.all(`SELECT * FROM notifications`, (err, rows) => {
+		if (err) {
+			return reject(err);
+		} else {
+			return resolve(rows);
+		}
+	});
+})
+
+module.exports.addNotification = (type, data) => new Promise((resolve, reject) => {
+	const dataString = JSON.stringify(data);
+	const query = `INSERT INTO notifications (
+		type, 
+		data
+	) VALUES (
+		"${type}", 
+		'${dataString}'
+	)`;
+
+	db.run(query, (err) => {
+		if (err) {
+			return reject(err);
+		} else {
+			return resolve();
+		}
+	});
+})
+
 module.exports.getSchedules = (month) => new Promise((resolve, reject) => {
 	db.all(`SELECT * FROM schedules WHERE month=${month}`, (err, rows) => {
 		if (err) {
