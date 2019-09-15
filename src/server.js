@@ -118,7 +118,6 @@ if (cluster.isWorker) {
 		setInterval(() => {
 			db.getEmployees().then(employees => {
 				const currentDate = new Date();
-				console.log(currentDate);
 				const day = currentDate.getDate() - 1;
 
 				db.getSchedules(currentDate.getMonth()).then(schedules => {
