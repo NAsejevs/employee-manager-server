@@ -37,6 +37,8 @@ if (cluster.isWorker) {
 		"http://localhost",
 		"http://192.168.1.150:8081",
 		"http://192.168.1.150",
+		"http://192.168.1.151:8081",
+		"http://192.168.1.151",
 	];
 	
 	const corsOptions = {
