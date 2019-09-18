@@ -97,10 +97,12 @@ module.exports.addNotification = (type, data) => new Promise((resolve, reject) =
 	const dataString = JSON.stringify(data);
 	const query = `INSERT INTO notifications (
 		type, 
-		data
+		data,
+		date
 	) VALUES (
 		"${type}", 
-		'${dataString}'
+		'${dataString}',
+		'${new Date().toJSON()}'
 	)`;
 
 	db.run(query, (err) => {

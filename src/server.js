@@ -229,6 +229,13 @@ if (cluster.isWorker) {
 		});
 	});
 
+	app.post("/addNotification", (req, res) => {
+		console.log("adding notification");
+		db.addNotification(req.body.type, req.body.data).then(() => {
+			res.end();
+		});
+	});
+
 	app.post("/getSchedules", (req, res) => {
 		db.getSchedules(req.body.month).then((schedules) => {
 			res.send(schedules);
