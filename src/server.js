@@ -418,7 +418,7 @@ if (cluster.isWorker) {
 	
 		let weekendDays = [];
 	
-		db.getEmployees((employees) => {
+		db.getEmployees().then((employees) => {
 			settings.employees.forEach((employee, index) => {
 				db.getEmployeeWorkLogFromTo(employee.id, startDate, endDate).then((workLog) => {
 					let row = {
