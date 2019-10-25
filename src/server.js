@@ -124,7 +124,7 @@ if (cluster.isWorker) {
 
 				db.getSchedules(currentDate.getMonth()).then(schedules => {
 					schedules.forEach((schedule) => {
-						const employee = employees.find((employee) => {
+						let employee = employees.find((employee) => {
 							return employee.id === schedule.employee_id;
 						});
 						if(employee !== undefined) {
@@ -230,8 +230,13 @@ if (cluster.isWorker) {
 	});
 
 	app.post("/addNotification", (req, res) => {
-		console.log("adding notification");
 		db.addNotification(req.body.type, req.body.data).then(() => {
+			res.end();
+		});
+	});
+
+	app.post("/updateNotification", (req, res) => {
+		db.updateNotification(req.body.id, req.body.type, req.body.data).then(() => {
 			res.end();
 		});
 	});

@@ -114,6 +114,17 @@ module.exports.addNotification = (type, data) => new Promise((resolve, reject) =
 	});
 })
 
+module.exports.updateNotification = (id, type, data) => new Promise((resolve, reject) => {
+	const dataString = JSON.stringify(data);
+	db.run(`UPDATE notifications SET type="${type}", data='${dataString}' WHERE id=${id}`, (err) => {
+		if (err) {
+			return reject(err);
+		} else {
+			return resolve();
+		}
+	});
+})
+
 module.exports.getSchedules = (month) => new Promise((resolve, reject) => {
 	db.all(`SELECT * FROM schedules WHERE month=${month}`, (err, rows) => {
 		if (err) {
