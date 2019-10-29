@@ -276,6 +276,8 @@ module.exports.editWorkLog = (id, startDate, endDate, working) => new Promise((r
 		id=${id}`;
 	}
 
+	console.log(query);
+
 	db.run(query, (err) => {
 		if (err) {
 			return reject(err);

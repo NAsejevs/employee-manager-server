@@ -294,7 +294,7 @@ if (cluster.isWorker) {
 	
 	// Edit a work log by ID
 	app.post("/editWorkLog", (req, res) => {
-		db.editWorkLog(req.body.id, req.body.startDate, req.body.endDate, req.body.working).then(() => {
+		db.editWorkLog(req.body.workLogId, req.body.startDate, req.body.endDate, req.body.working).then(() => {
 			res.end();
 		});
 	});
