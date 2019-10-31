@@ -130,22 +130,23 @@ if (cluster.isWorker) {
 						if(employee !== undefined) {
 							if(!employee.working) {
 								const days = JSON.parse(schedule.days);
-							
-								switch(days[day]) {
-									case "D": {
-										if(currentDate.getHours() === 8 && currentDate.getMinutes() === 0) {
-											db.addNotification("EMPLOYEE_LATE", {...employee});
+								if(schedule.checked) {
+									switch(days[day]) {
+										case "D": {
+											if(currentDate.getHours() === 8 && currentDate.getMinutes() === 0) {
+												db.addNotification("EMPLOYEE_LATE", {...employee});
+											}
+											break;
 										}
-										break;
-									}
-									case "N": {
-										if(currentDate.getHours() === 17 && currentDate.getMinutes() === 0) {
-											db.addNotification("EMPLOYEE_LATE", {...employee});
+										case "N": {
+											if(currentDate.getHours() === 3 && currentDate.getMinutes() === 5) {
+												db.addNotification("EMPLOYEE_LATE", {...employee});
+											}
+											break;
 										}
-										break;
-									}
-									default: {
-										break;
+										default: {
+											break;
+										}
 									}
 								}
 							}

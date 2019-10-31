@@ -151,7 +151,8 @@ module.exports.saveSchedules = (schedules) => new Promise((resolve, reject) => {
 			const updateQuery = `UPDATE schedules SET 
 				employee_id=?,
 				month=?,
-				days=?
+				days=?,
+				checked=?
 				WHERE 
 				employee_id=${schedule.employee_id}
 				AND
@@ -160,8 +161,10 @@ module.exports.saveSchedules = (schedules) => new Promise((resolve, reject) => {
 			const insertQuery = `INSERT INTO schedules (
 					employee_id,
 					month,
-					days
+					days,
+					checked
 				)  VALUES (
+					?,
 					?,
 					?,
 					?
@@ -170,7 +173,8 @@ module.exports.saveSchedules = (schedules) => new Promise((resolve, reject) => {
 			const params = [
 				schedule.employee_id,
 				schedule.month,
-				JSON.stringify(schedule.days)
+				JSON.stringify(schedule.days),
+				schedule.checked
 			];
 	
 			db.run(updateQuery, params, function(err) {
