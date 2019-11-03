@@ -114,6 +114,17 @@ module.exports.addNotification = (type, data) => new Promise((resolve, reject) =
 	});
 })
 
+module.exports.updateNotification = (id, type, data) => new Promise((resolve, reject) => {
+	const dataString = JSON.stringify(data);
+	db.run(`UPDATE notifications SET type="${type}", data='${dataString}' WHERE id=${id}`, (err) => {
+		if (err) {
+			return reject(err);
+		} else {
+			return resolve();
+		}
+	});
+})
+
 module.exports.getSchedules = (month) => new Promise((resolve, reject) => {
 	db.all(`SELECT * FROM schedules WHERE month=${month}`, (err, rows) => {
 		if (err) {
@@ -140,7 +151,8 @@ module.exports.saveSchedules = (schedules) => new Promise((resolve, reject) => {
 			const updateQuery = `UPDATE schedules SET 
 				employee_id=?,
 				month=?,
-				days=?
+				days=?,
+				checked=?
 				WHERE 
 				employee_id=${schedule.employee_id}
 				AND
@@ -149,8 +161,10 @@ module.exports.saveSchedules = (schedules) => new Promise((resolve, reject) => {
 			const insertQuery = `INSERT INTO schedules (
 					employee_id,
 					month,
-					days
+					days,
+					checked
 				)  VALUES (
+					?,
 					?,
 					?,
 					?
@@ -159,7 +173,8 @@ module.exports.saveSchedules = (schedules) => new Promise((resolve, reject) => {
 			const params = [
 				schedule.employee_id,
 				schedule.month,
-				JSON.stringify(schedule.days)
+				JSON.stringify(schedule.days),
+				schedule.checked
 			];
 	
 			db.run(updateQuery, params, function(err) {
@@ -264,6 +279,8 @@ module.exports.editWorkLog = (id, startDate, endDate, working) => new Promise((r
 	WHERE 
 		id=${id}`;
 	}
+
+	console.log(query);
 
 	db.run(query, (err) => {
 		if (err) {

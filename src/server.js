@@ -124,28 +124,29 @@ if (cluster.isWorker) {
 
 				db.getSchedules(currentDate.getMonth()).then(schedules => {
 					schedules.forEach((schedule) => {
-						const employee = employees.find((employee) => {
+						let employee = employees.find((employee) => {
 							return employee.id === schedule.employee_id;
 						});
 						if(employee !== undefined) {
 							if(!employee.working) {
 								const days = JSON.parse(schedule.days);
-							
-								switch(days[day]) {
-									case "D": {
-										if(currentDate.getHours() === 8 && currentDate.getMinutes() === 0) {
-											db.addNotification("EMPLOYEE_LATE", {...employee});
+								if(schedule.checked) {
+									switch(days[day]) {
+										case "D": {
+											if(currentDate.getHours() === 8 && currentDate.getMinutes() === 0) {
+												db.addNotification("EMPLOYEE_LATE", {...employee});
+											}
+											break;
 										}
-										break;
-									}
-									case "N": {
-										if(currentDate.getHours() === 17 && currentDate.getMinutes() === 0) {
-											db.addNotification("EMPLOYEE_LATE", {...employee});
+										case "N": {
+											if(currentDate.getHours() === 3 && currentDate.getMinutes() === 5) {
+												db.addNotification("EMPLOYEE_LATE", {...employee});
+											}
+											break;
 										}
-										break;
-									}
-									default: {
-										break;
+										default: {
+											break;
+										}
 									}
 								}
 							}
@@ -230,8 +231,13 @@ if (cluster.isWorker) {
 	});
 
 	app.post("/addNotification", (req, res) => {
-		console.log("adding notification");
 		db.addNotification(req.body.type, req.body.data).then(() => {
+			res.end();
+		});
+	});
+
+	app.post("/updateNotification", (req, res) => {
+		db.updateNotification(req.body.id, req.body.type, req.body.data).then(() => {
 			res.end();
 		});
 	});
@@ -289,7 +295,7 @@ if (cluster.isWorker) {
 	
 	// Edit a work log by ID
 	app.post("/editWorkLog", (req, res) => {
-		db.editWorkLog(req.body.id, req.body.startDate, req.body.endDate, req.body.working).then(() => {
+		db.editWorkLog(req.body.workLogId, req.body.startDate, req.body.endDate, req.body.working).then(() => {
 			res.end();
 		});
 	});
