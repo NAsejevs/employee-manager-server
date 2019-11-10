@@ -133,7 +133,7 @@ if (cluster.isWorker) {
 								if(schedule.checked) {
 									switch(days[day]) {
 										case "D": {
-											if(currentDate.getHours() === 8 && currentDate.getMinutes() === 0) {
+											if(currentDate.getHours() === 15 && currentDate.getMinutes() === 13) {
 												db.addNotification("EMPLOYEE_LATE", {...employee});
 											}
 											break;
